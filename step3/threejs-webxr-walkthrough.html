@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js — WebXR Walkthrough</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d14;
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* ===== HUD ===== */
+    #hud-top {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #hud-top h1 {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #4dabf7;
+      text-shadow: 0 0 20px rgba(77, 171, 247, 0.3);
+    }
+
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      display: none;
+    }
+
+    #crosshair::before,
+    #crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    #crosshair::before { width: 1px; height: 100%; left: 50%; }
+    #crosshair::after { width: 100%; height: 1px; top: 50%; }
+
+    #mode-indicator {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #4dabf7;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 14px;
+      border: 1px solid rgba(77, 171, 247, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    #position-display {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: #444;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      line-height: 1.8;
+      display: none;
+    }
+
+    #position-display span { color: #4dabf7; }
+
+    /* Панель управления */
+    #controls-panel {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #888;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn:hover {
+      background: rgba(77, 171, 247, 0.1);
+      border-color: #4dabf7;
+      color: #4dabf7;
+    }
+
+    .btn.active {
+      background: rgba(77, 171, 247, 0.15);
+      border-color: #4dabf7;
+      color: #4dabf7;
+    }
+
+    /* XR кнопки — стилизуем VRButton / ARButton от Three.js */
+    .xr-btn {
+      background: rgba(77, 171, 247, 0.1) !important;
+      border: 1px solid rgba(77, 171, 247, 0.3) !important;
+      color: #4dabf7 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important;
+      letter-spacing: 2px !important;
+      text-transform: uppercase !important;
+      padding: 10px 18px !important;
+      cursor: pointer !important;
+      position: fixed !important;
+      z-index: 20 !important;
+      backdrop-filter: blur(10px) !important;
+      transition: all 0.3s ease !important;
+    }
+
+    #VRButton {
+      bottom: 56px !important;
+      left: calc(50% - 120px) !important;
+    }
+
+    #ARButton {
+      bottom: 56px !important;
+      left: calc(50% + 10px) !important;
+    }
+
+    /* XR статус */
+    #xr-status {
+      position: fixed;
+      bottom: 95px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 9px;
+      color: #444;
+      letter-spacing: 1px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    #xr-status.supported { color: #4dabf7; }
+
+    /* FPS подсказка */
+    #fps-hint {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 30px 40px;
+      text-align: center;
+      border: 1px solid rgba(77, 171, 247, 0.2);
+      display: none;
+      cursor: pointer;
+      backdrop-filter: blur(20px);
+    }
+
+    #fps-hint h3 {
+      font-size: 13px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #4dabf7;
+      margin-bottom: 16px;
+    }
+
+    #fps-hint p {
+      font-size: 10px;
+      color: #666;
+      line-height: 2.2;
+      letter-spacing: 0.5px;
+    }
+
+    #fps-hint .key {
+      display: inline-block;
+      background: rgba(77, 171, 247, 0.1);
+      border: 1px solid rgba(77, 171, 247, 0.3);
+      color: #4dabf7;
+      padding: 2px 8px;
+      font-size: 10px;
+      margin: 0 2px;
+    }
+
+    #fps-hint .start-note {
+      margin-top: 16px;
+      font-size: 10px;
+      color: #4dabf7;
+      letter-spacing: 2px;
+    }
+
+    /* Стартовый экран */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(13, 13, 20, 0.97);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #start-screen.hidden { display: none; }
+
+    #start-screen h2 {
+      font-size: 14px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: #4dabf7;
+    }
+
+    #start-screen p {
+      font-size: 11px;
+      color: #555;
+      text-align: center;
+      line-height: 2;
+      max-width: 500px;
+    }
+
+    .btn-start {
+      background: rgba(77, 171, 247, 0.1);
+      border: 1px solid rgba(77, 171, 247, 0.3);
+      color: #4dabf7;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-start:hover { background: rgba(77, 171, 247, 0.2); }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #555;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover { border-color: #444; color: #888; }
+
+    /* Drag & Drop */
+    #dropzone {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(13, 13, 20, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      border: 2px dashed rgba(77, 171, 247, 0.3);
+    }
+
+    #dropzone.active { display: flex; }
+
+    #dropzone h2 {
+      font-size: 14px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #4dabf7;
+    }
+
+    /* Loading */
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(13, 13, 20, 0.98);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #loading.active { display: flex; }
+
+    #loading p { font-size: 12px; color: #4dabf7; letter-spacing: 2px; }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 2px solid rgba(77, 171, 247, 0.1);
+      border-top-color: #4dabf7;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- ===== UI ===== -->
+<div id="hud-top">
+  <h1>WebXR Walkthrough</h1>
+</div>
+
+<div id="crosshair"></div>
+<div id="mode-indicator">Orbit Mode</div>
+<div id="position-display"></div>
+<div id="xr-status">Проверка WebXR...</div>
+
+<div id="controls-panel">
+  <button class="btn active" onclick="setOrbitMode()">Orbit</button>
+  <button class="btn" onclick="enterFPSMode()">Прогулка</button>
+  <button class="btn" onclick="toggleGrid()">Сетка</button>
+  <button class="btn" onclick="toggleWireframe()">Каркас</button>
+  <button class="btn" onclick="cycleBackground()">Фон</button>
+  <button class="btn" onclick="fileInput.click()">Загрузить .glb</button>
+</div>
+
+<div id="fps-hint" onclick="lockPointer()">
+  <h3>Режим прогулки</h3>
+  <p>
+    <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — ходить<br>
+    <span class="key">Мышь</span> — смотреть<br>
+    <span class="key">Shift</span> — бежать<br>
+    <span class="key">Space</span> — вверх · <span class="key">C</span> — вниз<br>
+    <span class="key">Esc</span> — выйти
+  </p>
+  <p class="start-note">Кликни чтобы начать</p>
+</div>
+
+<div id="start-screen">
+  <h2>WebXR Walkthrough</h2>
+  <p>
+    Загрузи 3D-модель помещения (.glb / .gltf)<br>
+    и осмотри её в трёх режимах:<br><br>
+    <strong style="color:#4dabf7">Orbit</strong> — крути снаружи &nbsp;
+    <strong style="color:#4dabf7">FPS</strong> — ходи внутри<br>
+    <strong style="color:#4dabf7">VR</strong> — надень шлем &nbsp;
+    <strong style="color:#4dabf7">AR</strong> — наведи камеру телефона
+  </p>
+  <button class="btn-start" onclick="fileInput.click()">Загрузить модель</button>
+  <button class="btn-secondary" onclick="loadDemo()">Демо-комната</button>
+</div>
+
+<div id="dropzone"><h2>Перетащи .glb / .gltf сюда</h2></div>
+<div id="loading"><div class="spinner"></div><p>Загрузка...</p></div>
+<input type="file" id="fileInput" accept=".glb,.gltf" style="display:none">
+
+<!-- ===== СКРИПТЫ ===== -->
+
+<!-- 
+  ВАЖНО: для WebXR используем ES-модули (import maps).
+  Это позволяет подключить VRButton и ARButton,
+  которых нет в обычной сборке r128.
+-->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+  // ============================================
+  // ИМПОРТЫ
+  // ============================================
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+  // ============================================
+  // WebXR кнопки — ключевая часть шага 3
+  // VRButton — для VR-шлемов (Meta Quest, Valve Index и т.д.)
+  // ARButton — для AR на телефоне (Android Chrome)
+  // ============================================
+  import { VRButton } from 'three/addons/webxr/VRButton.js';
+  import { ARButton } from 'three/addons/webxr/ARButton.js';
+
+  // Для контроллеров в VR
+  import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+  // ============================================
+  // СЦЕНА, КАМЕРА, РЕНДЕРЕР
+  // ============================================
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0d0d14, 0.03);
+
+  const camera = new THREE.PerspectiveCamera(
+    65, window.innerWidth / window.innerHeight, 0.01, 500
+  );
+  camera.position.set(3, 1.7, 5);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0d0d14);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // ============================================
+  // ВКЛЮЧАЕМ WebXR НА РЕНДЕРЕРЕ
+  // Это главная строчка — без неё VR/AR не работает
+  // ============================================
+  renderer.xr.enabled = true;
+
+  document.body.appendChild(renderer.domElement);
+
+  // ============================================
+  // WebXR КНОПКИ
+  // Three.js сам проверит поддержку и покажет
+  // нужную кнопку или сообщение об ошибке
+  // ============================================
+  let vrSupported = false;
+  let arSupported = false;
+  const xrStatus = document.getElementById('xr-status');
+
+  async function setupXRButtons() {
+    // Проверяем VR
+    if ('xr' in navigator) {
+      try {
+        vrSupported = await navigator.xr.isSessionSupported('immersive-vr');
+      } catch (e) { vrSupported = false; }
+
+      try {
+        arSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      } catch (e) { arSupported = false; }
+    }
+
+    // VR кнопка
+    const vrButton = VRButton.createButton(renderer);
+    vrButton.classList.add('xr-btn');
+    document.body.appendChild(vrButton);
+
+    // AR кнопка — с hit-test для размещения модели
+    // domOverlay позволяет показывать HTML-элементы поверх AR
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: document.body }
+    });
+    arButton.classList.add('xr-btn');
+    document.body.appendChild(arButton);
+
+    // Обновляем статус
+    const statuses = [];
+    if (vrSupported) statuses.push('VR ✓');
+    else statuses.push('VR ✗');
+
+    if (arSupported) statuses.push('AR ✓');
+    else statuses.push('AR ✗');
+
+    xrStatus.textContent = `WebXR: ${statuses.join(' · ')}`;
+    xrStatus.classList.toggle('supported', vrSupported || arSupported);
+
+    if (!vrSupported && !arSupported) {
+      xrStatus.textContent += ' · Нужен шлем или Android Chrome';
+    }
+  }
+
+  setupXRButtons();
+
+  // ============================================
+  // VR КОНТРОЛЛЕРЫ
+  // Когда пользователь в VR — ему нужны контроллеры
+  // для взаимодействия (луч-указатель, телепорт и т.д.)
+  // ============================================
+  const controllerModelFactory = new XRControllerModelFactory();
+
+  // Контроллер 0 (левая рука)
+  const controller0 = renderer.xr.getController(0);
+  scene.add(controller0);
+
+  const grip0 = renderer.xr.getControllerGrip(0);
+  grip0.add(controllerModelFactory.createControllerModel(grip0));
+  scene.add(grip0);
+
+  // Контроллер 1 (правая рука)
+  const controller1 = renderer.xr.getController(1);
+  scene.add(controller1);
+
+  const grip1 = renderer.xr.getControllerGrip(1);
+  grip1.add(controllerModelFactory.createControllerModel(grip1));
+  scene.add(grip1);
+
+  // Лучи-указатели для контроллеров
+  const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, 0, -5)
+  ]);
+
+  const lineMaterial = new THREE.LineBasicMaterial({
+    color: 0x4dabf7,
+    transparent: true,
+    opacity: 0.6
+  });
+
+  controller0.add(new THREE.Line(lineGeometry.clone(), lineMaterial.clone()));
+  controller1.add(new THREE.Line(lineGeometry.clone(), lineMaterial.clone()));
+
+  // VR Teleport — кликнуть контроллером чтобы переместиться
+  // (обработка внутри unified onSelect выше — если не AR, то VR телепорт)
+
+  const teleportMarker = new THREE.Mesh(
+    new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x4dabf7, transparent: true, opacity: 0.6 })
+  );
+  teleportMarker.visible = false;
+  scene.add(teleportMarker);
+
+  function onVRSelect(event) {
+    const controller = event.target;
+    const tempMatrix = new THREE.Matrix4();
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+    // Ищем пересечение с полом / горизонтальными поверхностями
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    for (const hit of intersects) {
+      // Проверяем что это горизонтальная поверхность (нормаль вверх)
+      if (hit.face && hit.face.normal.y > 0.8) {
+        // Телепортируем VR-камеру (через xr reference space)
+        const offsetPosition = new THREE.Vector3();
+        offsetPosition.copy(hit.point);
+
+        // Для VR: перемещаем "игрока" (rig) к точке
+        const baseReferenceSpace = renderer.xr.getReferenceSpace();
+        const teleportOffset = new XRRigidTransform(
+          { x: -offsetPosition.x, y: -offsetPosition.y, z: -offsetPosition.z, w: 1 }
+        );
+        const newReferenceSpace = baseReferenceSpace.getOffsetReferenceSpace(teleportOffset);
+        renderer.xr.setReferenceSpace(newReferenceSpace);
+
+        break;
+      }
+    }
+  }
+
+  // ============================================
+  // AR — Hit-Test + размещение модели по тапу
+  // 1. Кружок показывает где поверхность
+  // 2. Тапнул по экрану → модель встаёт на это место
+  // 3. Можно тапнуть снова → модель переместится
+  // ============================================
+  let hitTestSource = null;
+  let hitTestSourceRequested = false;
+  let arModelPlaced = false;
+  let arPlacedModel = null; // клон модели для AR
+
+  const arReticle = new THREE.Mesh(
+    new THREE.RingGeometry(0.1, 0.15, 32).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x4dabf7 })
+  );
+  arReticle.matrixAutoUpdate = false;
+  arReticle.visible = false;
+  scene.add(arReticle);
+
+  // AR-контроллер — реагирует на тап по экрану
+  // Используем отдельный обработчик, который проверяет
+  // находимся ли мы в AR-сессии
+  function onSelect() {
+    const session = renderer.xr.getSession();
+    if (!session) return;
+
+    // Определяем AR по наличию hit-test результатов
+    if (arReticle.visible) {
+      onARSelect();
+    }
+  }
+
+  controller0.addEventListener('select', onSelect);
+  controller1.addEventListener('select', onSelect);
+
+  function onARSelect() {
+    // Ставим модель только если reticle виден (поверхность найдена)
+    if (!arReticle.visible) return;
+
+    if (!arPlacedModel) {
+      // Первый тап — создаём модель для AR
+      if (currentModel) {
+        // Клонируем текущую модель
+        arPlacedModel = currentModel.clone();
+
+        // Масштабируем для AR (модель должна быть ~0.5-1м в реальности)
+        const box = new THREE.Box3().setFromObject(arPlacedModel);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const arScale = 1.0 / maxDim; // нормализуем до ~1 метра
+        arPlacedModel.scale.multiplyScalar(arScale);
+
+        scene.add(arPlacedModel);
+      } else {
+        // Если модель не загружена — ставим демо-объект
+        const demoGroup = new THREE.Group();
+
+        // Маленький домик
+        const base = new THREE.Mesh(
+          new THREE.BoxGeometry(0.3, 0.15, 0.3),
+          new THREE.MeshStandardMaterial({ color: 0xe8e4de, roughness: 0.8 })
+        );
+        base.position.y = 0.075;
+        demoGroup.add(base);
+
+        // Крыша
+        const roof = new THREE.Mesh(
+          new THREE.ConeGeometry(0.25, 0.12, 4),
+          new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 })
+        );
+        roof.position.y = 0.21;
+        roof.rotation.y = Math.PI / 4;
+        demoGroup.add(roof);
+
+        // Дверь
+        const door = new THREE.Mesh(
+          new THREE.BoxGeometry(0.06, 0.1, 0.01),
+          new THREE.MeshStandardMaterial({ color: 0x3e2723 })
+        );
+        door.position.set(0, 0.05, 0.151);
+        demoGroup.add(door);
+
+        arPlacedModel = demoGroup;
+        scene.add(arPlacedModel);
+      }
+    }
+
+    // Ставим/перемещаем модель на позицию reticle
+    arPlacedModel.position.setFromMatrixPosition(arReticle.matrix);
+    // Берём вращение от reticle (чтобы модель стояла параллельно поверхности)
+    arPlacedModel.quaternion.setFromRotationMatrix(arReticle.matrix);
+
+    arModelPlaced = true;
+
+    // Скрываем reticle после размещения (покажется снова при следующем тапе)
+    // Нет, оставляем видимым чтобы можно было переставить
+  }
+
+  // ============================================
+  // ORBIT + FPS CONTROLS
+  // ============================================
+  const orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.enableDamping = true;
+  orbitControls.dampingFactor = 0.08;
+  orbitControls.autoRotate = false;
+  orbitControls.minDistance = 0.3;
+  orbitControls.maxDistance = 50;
+
+  const fpsControls = new PointerLockControls(camera, document.body);
+
+  let currentMode = 'orbit';
+  const WALK_SPEED = 3.0;
+  const RUN_SPEED = 7.0;
+  const PLAYER_HEIGHT = 1.7;
+
+  const keys = {
+    forward: false, backward: false,
+    left: false, right: false,
+    up: false, down: false,
+    shift: false
+  };
+
+  const velocity = new THREE.Vector3();
+  const direction = new THREE.Vector3();
+
+  // ============================================
+  // ОСВЕЩЕНИЕ
+  // ============================================
+  const hemiLight = new THREE.HemisphereLight(0xd0e0f0, 0x2a2a3a, 0.7);
+  scene.add(hemiLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+  dirLight.position.set(5, 10, 5);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.camera.near = 0.1;
+  dirLight.shadow.camera.far = 50;
+  dirLight.shadow.camera.left = -15;
+  dirLight.shadow.camera.right = 15;
+  dirLight.shadow.camera.top = 15;
+  dirLight.shadow.camera.bottom = -15;
+  scene.add(dirLight);
+
+  const fillLight = new THREE.DirectionalLight(0x4dabf7, 0.3);
+  fillLight.position.set(-5, 3, -5);
+  scene.add(fillLight);
+
+  // ============================================
+  // СЕТКА
+  // ============================================
+  const grid = new THREE.GridHelper(30, 60, 0x1a1a2e, 0x141422);
+  scene.add(grid);
+
+  const shadowFloor = new THREE.Mesh(
+    new THREE.PlaneGeometry(30, 30),
+    new THREE.ShadowMaterial({ opacity: 0.3 })
+  );
+  shadowFloor.rotation.x = -Math.PI / 2;
+  shadowFloor.position.y = -0.01;
+  shadowFloor.receiveShadow = true;
+  scene.add(shadowFloor);
+
+  // ============================================
+  // ЗАГРУЗЧИК
+  // ============================================
+  const gltfLoader = new GLTFLoader();
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+  gltfLoader.setDRACOLoader(dracoLoader);
+
+  let currentModel = null;
+  let isWireframe = false;
+
+  function loadModelFromFile(file) {
+    document.getElementById('loading').classList.add('active');
+    document.getElementById('start-screen').classList.add('hidden');
+
+    const url = URL.createObjectURL(file);
+
+    if (currentModel) {
+      scene.remove(currentModel);
+      currentModel = null;
+    }
+
+    gltfLoader.load(
+      url,
+      (gltf) => {
+        const model = gltf.scene;
+
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        let scale = 1;
+        if (maxDim < 1) scale = 5 / maxDim;
+        else if (maxDim > 100) scale = 20 / maxDim;
+        model.scale.setScalar(scale);
+
+        const scaledBox = new THREE.Box3().setFromObject(model);
+        const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+        const scaledSize = scaledBox.getSize(new THREE.Vector3());
+
+        model.position.x -= scaledCenter.x;
+        model.position.z -= scaledCenter.z;
+        model.position.y -= scaledBox.min.y;
+
+        scene.add(model);
+        currentModel = model;
+
+        const dist = Math.max(scaledSize.x, scaledSize.z) * 1.2;
+        camera.position.set(dist, scaledSize.y * 0.8, dist);
+        orbitControls.target.set(0, scaledSize.y * 0.4, 0);
+        orbitControls.update();
+
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('position-display').style.display = 'block';
+        URL.revokeObjectURL(url);
+      },
+      (progress) => {
+        if (progress.total > 0) {
+          const pct = Math.round((progress.loaded / progress.total) * 100);
+          document.querySelector('#loading p').textContent = `Загрузка... ${pct}%`;
+        }
+      },
+      (error) => {
+        console.error('Ошибка:', error);
+        document.getElementById('loading').classList.remove('active');
+        alert('Ошибка загрузки. Проверь формат файла (.glb / .gltf)');
+      }
+    );
+  }
+
+  // ============================================
+  // ДЕМО-КВАРТИРА
+  // ============================================
+  function loadDemo() {
+    document.getElementById('start-screen').classList.add('hidden');
+
+    if (currentModel) scene.remove(currentModel);
+
+    const apt = new THREE.Group();
+
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8e4de, roughness: 0.92 });
+    const floorMat2 = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.7, metalness: 0.05 });
+    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xf0ede8, roughness: 0.95 });
+    const darkWood = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.6, metalness: 0.1 });
+    const couchBlue = new THREE.MeshStandardMaterial({ color: 0x2c5f8a, roughness: 0.65 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xaaddff, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.3 });
+    const kitchenMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.4, metalness: 0.1 });
+    const counterMat = new THREE.MeshStandardMaterial({ color: 0x2d2d2d, roughness: 0.2, metalness: 0.3 });
+    const rugMat = new THREE.MeshStandardMaterial({ color: 0x8b4557, roughness: 0.95 });
+    const chairMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.4 });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.8 });
+    const potMat = new THREE.MeshStandardMaterial({ color: 0xc47a44, roughness: 0.8 });
+    const plantGreen = new THREE.MeshStandardMaterial({ color: 0x2d6a1e, roughness: 0.8 });
+
+    const W = 0.12, H = 2.8, RX = 8, RZ = 6;
+
+    // Пол и потолок
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(RX, 0.05, RZ), floorMat2);
+    fl.position.set(RX / 2, 0, RZ / 2); fl.receiveShadow = true; apt.add(fl);
+
+    const ce = new THREE.Mesh(new THREE.BoxGeometry(RX, 0.05, RZ), ceilingMat);
+    ce.position.set(RX / 2, H, RZ / 2); apt.add(ce);
+
+    // Стены
+    const wBack = new THREE.Mesh(new THREE.BoxGeometry(RX, H, W), wallMat);
+    wBack.position.set(RX / 2, H / 2, 0); wBack.castShadow = true; apt.add(wBack);
+
+    const wFrontL = new THREE.Mesh(new THREE.BoxGeometry(2.5, H, W), wallMat);
+    wFrontL.position.set(1.25, H / 2, RZ); apt.add(wFrontL);
+    const wFrontR = new THREE.Mesh(new THREE.BoxGeometry(2.5, H, W), wallMat);
+    wFrontR.position.set(RX - 1.25, H / 2, RZ); apt.add(wFrontR);
+    const wFrontT = new THREE.Mesh(new THREE.BoxGeometry(3, 0.8, W), wallMat);
+    wFrontT.position.set(RX / 2, H - 0.4, RZ); apt.add(wFrontT);
+    const wFrontB = new THREE.Mesh(new THREE.BoxGeometry(3, 0.9, W), wallMat);
+    wFrontB.position.set(RX / 2, 0.45, RZ); apt.add(wFrontB);
+
+    const win = new THREE.Mesh(new THREE.BoxGeometry(3, 1.1, 0.03), glassMat);
+    win.position.set(RX / 2, 1.45, RZ); apt.add(win);
+
+    const wLeft = new THREE.Mesh(new THREE.BoxGeometry(W, H, RZ), wallMat);
+    wLeft.position.set(0, H / 2, RZ / 2); wLeft.castShadow = true; apt.add(wLeft);
+    const wRight = new THREE.Mesh(new THREE.BoxGeometry(W, H, RZ), wallMat);
+    wRight.position.set(RX, H / 2, RZ / 2); wRight.castShadow = true; apt.add(wRight);
+
+    // Перегородка
+    const iWL = new THREE.Mesh(new THREE.BoxGeometry(W, H, 2), wallMat);
+    iWL.position.set(5, H / 2, 1); apt.add(iWL);
+    const iWR = new THREE.Mesh(new THREE.BoxGeometry(W, H, 2.5), wallMat);
+    iWR.position.set(5, H / 2, 4.75); apt.add(iWR);
+    const iWT = new THREE.Mesh(new THREE.BoxGeometry(W, 0.7, 1.5), wallMat);
+    iWT.position.set(5, H - 0.35, 2.75); apt.add(iWT);
+
+    // Диван
+    const cb = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.35, 0.85), couchBlue);
+    cb.position.set(2.5, 0.2, 0.7); cb.castShadow = true; apt.add(cb);
+    const cbk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 0.12), couchBlue);
+    cbk.position.set(2.5, 0.55, 0.2); cbk.castShadow = true; apt.add(cbk);
+
+    // Столик
+    const tt = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 0.6), darkWood);
+    tt.position.set(2.5, 0.42, 2.0); tt.castShadow = true; apt.add(tt);
+    [[2.05, 1.75], [2.95, 1.75], [2.05, 2.25], [2.95, 2.25]].forEach(([x, z]) => {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), darkWood);
+      l.position.set(x, 0.2, z); apt.add(l);
+    });
+
+    // Ковёр
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.02, 1.8), rugMat);
+    rug.position.set(2.5, 0.02, 1.8); apt.add(rug);
+
+    // ТВ
+    const tvStand = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 0.35), darkWood);
+    tvStand.position.set(2.5, 0.25, 3.7); tvStand.castShadow = true; apt.add(tvStand);
+    const tv = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.5 }));
+    tv.position.set(2.5, 0.9, 3.72); apt.add(tv);
+    const tvs = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.68, 0.01),
+      new THREE.MeshStandardMaterial({ color: 0x1a2a3a, emissive: 0x0a1520, emissiveIntensity: 0.5 }));
+    tvs.position.set(2.5, 0.9, 3.74); apt.add(tvs);
+
+    // Торшер
+    const lb = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.03, 16), metalMat);
+    lb.position.set(0.5, 0.015, 0.5); apt.add(lb);
+    const lp = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8), metalMat);
+    lp.position.set(0.5, 0.75, 0.5); apt.add(lp);
+    const ls = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 0.25, 16, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xfff5e0, emissive: 0xffa500, emissiveIntensity: 0.4, side: THREE.DoubleSide }));
+    ls.position.set(0.5, 1.6, 0.5); apt.add(ls);
+    const ll = new THREE.PointLight(0xffcc77, 0.6, 6);
+    ll.position.set(0.5, 1.5, 0.5); ll.castShadow = true; apt.add(ll);
+
+    // Растение
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.2, 12), potMat);
+    pot.position.set(4.4, 0.1, 5.2); apt.add(pot);
+    const plant = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), plantGreen);
+    plant.position.set(4.4, 0.35, 5.2); apt.add(plant);
+
+    // Картины
+    [[1.5, 1.6, 0.1, 0x4dabf7], [3.5, 1.5, 0.1, 0xff6b6b]].forEach(([x, y, z, c]) => {
+      const fr = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.03),
+        new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+      fr.position.set(x, y, z); apt.add(fr);
+      const art = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.01),
+        new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.15 }));
+      art.position.set(x, y, z + 0.02); apt.add(art);
+    });
+
+    // Кухня
+    const kb = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.85, 0.6), kitchenMat);
+    kb.position.set(6.65, 0.425, 0.4); kb.castShadow = true; apt.add(kb);
+    const kc = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.04, 0.65), counterMat);
+    kc.position.set(6.65, 0.87, 0.4); apt.add(kc);
+    const ku = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.7, 0.35), kitchenMat);
+    ku.position.set(6.65, 1.85, 0.25); apt.add(ku);
+
+    // Обеденный стол
+    const dt = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.8), darkWood);
+    dt.position.set(6.5, 0.75, 3.5); dt.castShadow = true; apt.add(dt);
+    [[5.95, 3.15], [7.05, 3.15], [5.95, 3.85], [7.05, 3.85]].forEach(([x, z]) => {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.73, 0.04), darkWood);
+      l.position.set(x, 0.365, z); apt.add(l);
+    });
+
+    // Стулья
+    [[6.0, 2.7, -1], [7.0, 2.7, -1], [6.0, 4.3, 1], [7.0, 4.3, 1]].forEach(([x, z, dir]) => {
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.4), chairMat);
+      seat.position.set(x, 0.45, z); apt.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.45, 0.03), chairMat);
+      back.position.set(x, 0.7, z + dir * 0.18); apt.add(back);
+    });
+
+    // Свет
+    const kl = new THREE.PointLight(0xfff5e0, 0.5, 8);
+    kl.position.set(6.5, 2.5, 3); kl.castShadow = true; apt.add(kl);
+    const lvl = new THREE.PointLight(0xfff5e0, 0.4, 8);
+    lvl.position.set(2.5, 2.5, 2.5); lvl.castShadow = true; apt.add(lvl);
+
+    scene.add(apt);
+    currentModel = apt;
+
+    camera.position.set(2.5, PLAYER_HEIGHT, 4);
+    orbitControls.target.set(2.5, 1.2, 2);
+    orbitControls.update();
+
+    document.getElementById('position-display').style.display = 'block';
+  }
+
+  // Делаем функции глобальными для onclick
+  window.loadDemo = loadDemo;
+
+  // ============================================
+  // ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ
+  // ============================================
+  function setOrbitMode() {
+    currentMode = 'orbit';
+    orbitControls.enabled = true;
+    fpsControls.unlock();
+    document.getElementById('crosshair').style.display = 'none';
+    document.getElementById('fps-hint').style.display = 'none';
+    document.getElementById('mode-indicator').textContent = 'Orbit Mode';
+    document.querySelectorAll('#controls-panel .btn')[0].classList.add('active');
+    document.querySelectorAll('#controls-panel .btn')[1].classList.remove('active');
+  }
+  window.setOrbitMode = setOrbitMode;
+
+  function enterFPSMode() {
+    currentMode = 'fps';
+    orbitControls.enabled = false;
+    camera.position.y = PLAYER_HEIGHT;
+    document.getElementById('fps-hint').style.display = 'block';
+    document.getElementById('mode-indicator').textContent = 'FPS Mode';
+    document.querySelectorAll('#controls-panel .btn')[0].classList.remove('active');
+    document.querySelectorAll('#controls-panel .btn')[1].classList.add('active');
+  }
+  window.enterFPSMode = enterFPSMode;
+
+  function lockPointer() { fpsControls.lock(); }
+  window.lockPointer = lockPointer;
+
+  fpsControls.addEventListener('lock', () => {
+    document.getElementById('fps-hint').style.display = 'none';
+    document.getElementById('crosshair').style.display = 'block';
+  });
+
+  fpsControls.addEventListener('unlock', () => {
+    document.getElementById('crosshair').style.display = 'none';
+    if (currentMode === 'fps') {
+      document.getElementById('fps-hint').style.display = 'block';
+    }
+  });
+
+  // ============================================
+  // WebXR SESSION EVENTS
+  // Когда входим/выходим из VR или AR
+  // ============================================
+  renderer.xr.addEventListener('sessionstart', () => {
+    // Скрываем обычный UI в XR
+    document.getElementById('controls-panel').style.display = 'none';
+    document.getElementById('hud-top').style.opacity = '0';
+    document.getElementById('mode-indicator').textContent = renderer.xr.isPresenting ? 'XR Mode' : 'Orbit Mode';
+
+    // Убираем туман в AR (мешает видеть реальный мир)
+    if (scene.fog) scene.fog.density = 0;
+    grid.visible = false;
+    shadowFloor.visible = false;
+
+    // Делаем свет ярче для AR (чтобы модель была видна на фоне камеры)
+    hemiLight.intensity = 2.0;
+    dirLight.intensity = 3.0;
+
+    // Скрываем основную модель в AR — она появится как клон при тапе
+    if (currentModel) currentModel.visible = false;
+  });
+
+  renderer.xr.addEventListener('sessionend', () => {
+    document.getElementById('controls-panel').style.display = 'flex';
+    document.getElementById('hud-top').style.opacity = '1';
+    document.getElementById('mode-indicator').textContent = 'Orbit Mode';
+
+    scene.fog.density = 0.03;
+    grid.visible = true;
+    shadowFloor.visible = true;
+    renderer.setClearColor(0x0d0d14);
+
+    // Восстанавливаем свет
+    hemiLight.intensity = 0.7;
+    dirLight.intensity = 1.3;
+
+    // Показываем основную модель обратно
+    if (currentModel) currentModel.visible = true;
+
+    // Убираем AR-клон
+    if (arPlacedModel) {
+      scene.remove(arPlacedModel);
+      arPlacedModel = null;
+      arModelPlaced = false;
+    }
+
+    currentMode = 'orbit';
+    orbitControls.enabled = true;
+  });
+
+  // ============================================
+  // КЛАВИАТУРА
+  // ============================================
+  document.addEventListener('keydown', (e) => {
+    switch (e.code) {
+      case 'KeyW': case 'ArrowUp': keys.forward = true; break;
+      case 'KeyS': case 'ArrowDown': keys.backward = true; break;
+      case 'KeyA': case 'ArrowLeft': keys.left = true; break;
+      case 'KeyD': case 'ArrowRight': keys.right = true; break;
+      case 'Space': keys.up = true; e.preventDefault(); break;
+      case 'KeyC': keys.down = true; break;
+      case 'ShiftLeft': case 'ShiftRight': keys.shift = true; break;
+      case 'Escape': if (currentMode === 'fps') setOrbitMode(); break;
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    switch (e.code) {
+      case 'KeyW': case 'ArrowUp': keys.forward = false; break;
+      case 'KeyS': case 'ArrowDown': keys.backward = false; break;
+      case 'KeyA': case 'ArrowLeft': keys.left = false; break;
+      case 'KeyD': case 'ArrowRight': keys.right = false; break;
+      case 'Space': keys.up = false; break;
+      case 'KeyC': keys.down = false; break;
+      case 'ShiftLeft': case 'ShiftRight': keys.shift = false; break;
+    }
+  });
+
+  // ============================================
+  // АНИМАЦИЯ
+  // Для WebXR используем setAnimationLoop вместо
+  // requestAnimationFrame — это обязательно для XR!
+  // ============================================
+  const clock = new THREE.Clock();
+  const posDisplay = document.getElementById('position-display');
+
+  renderer.setAnimationLoop((timestamp, frame) => {
+    const delta = clock.getDelta();
+
+    // FPS движение (только вне XR)
+    if (!renderer.xr.isPresenting) {
+      if (currentMode === 'fps' && fpsControls.isLocked) {
+        const speed = keys.shift ? RUN_SPEED : WALK_SPEED;
+        velocity.x *= 0.85;
+        velocity.z *= 0.85;
+        velocity.y *= 0.85;
+
+        direction.z = Number(keys.forward) - Number(keys.backward);
+        direction.x = Number(keys.right) - Number(keys.left);
+        direction.normalize();
+
+        if (keys.forward || keys.backward) velocity.z -= direction.z * speed * delta;
+        if (keys.left || keys.right) velocity.x -= direction.x * speed * delta;
+        if (keys.up) velocity.y += speed * delta * 0.5;
+        if (keys.down) velocity.y -= speed * delta * 0.5;
+
+        fpsControls.moveRight(-velocity.x);
+        fpsControls.moveForward(-velocity.z);
+        camera.position.y += velocity.y;
+      }
+
+      if (currentMode === 'orbit') {
+        orbitControls.update();
+      }
+    }
+
+    // AR hit-test
+    if (frame) {
+      const session = renderer.xr.getSession();
+
+      if (session && !hitTestSourceRequested) {
+        // Проверяем что это AR-сессия (не VR)
+        const isAR = session.environmentBlendMode === 'screen' ||
+                     session.environmentBlendMode === 'additive';
+
+        if (isAR || session.inputSources) {
+          session.requestReferenceSpace('viewer').then((viewerSpace) => {
+            session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+              hitTestSource = source;
+            }).catch((err) => {
+              console.log('Hit test not available:', err);
+            });
+          }).catch((err) => {
+            console.log('Viewer reference space not available:', err);
+          });
+
+          hitTestSourceRequested = true;
+
+          session.addEventListener('end', () => {
+            hitTestSourceRequested = false;
+            hitTestSource = null;
+          });
+        }
+      }
+
+      if (hitTestSource) {
+        const referenceSpace = renderer.xr.getReferenceSpace();
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults.length > 0) {
+          const hit = hitTestResults[0];
+          const pose = hit.getPose(referenceSpace);
+          if (pose) {
+            arReticle.visible = true;
+            arReticle.matrix.fromArray(pose.transform.matrix);
+          }
+        } else {
+          arReticle.visible = false;
+        }
+      }
+    }
+
+    // Позиция
+    if (posDisplay.style.display !== 'none' && !renderer.xr.isPresenting) {
+      posDisplay.innerHTML =
+        `X: <span>${camera.position.x.toFixed(1)}</span> ` +
+        `Y: <span>${camera.position.y.toFixed(1)}</span> ` +
+        `Z: <span>${camera.position.z.toFixed(1)}</span>`;
+    }
+
+    renderer.render(scene, camera);
+  });
+
+  // ============================================
+  // UI
+  // ============================================
+  let gridVisible = true;
+  window.toggleGrid = () => { gridVisible = !gridVisible; grid.visible = gridVisible; };
+  window.toggleWireframe = () => {
+    isWireframe = !isWireframe;
+    if (currentModel) {
+      currentModel.traverse((child) => {
+        if (child.isMesh && child.material) child.material.wireframe = isWireframe;
+      });
+    }
+  };
+
+  const backgrounds = [0x0d0d14, 0x1a1a2e, 0x2d2d3f, 0x111111, 0xf5f5f0];
+  let bgIndex = 0;
+  window.cycleBackground = () => {
+    bgIndex = (bgIndex + 1) % backgrounds.length;
+    renderer.setClearColor(backgrounds[bgIndex]);
+    scene.fog.color.setHex(backgrounds[bgIndex]);
+  };
+
+  // ============================================
+  // DRAG & DROP
+  // ============================================
+  const dropzone = document.getElementById('dropzone');
+  window.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('active'); });
+  window.addEventListener('dragleave', (e) => { if (!e.relatedTarget) dropzone.classList.remove('active'); });
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith('.glb') || file.name.endsWith('.gltf'))) {
+      loadModelFromFile(file);
+    }
+  });
+
+  const fileInput = document.getElementById('fileInput');
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) loadModelFromFile(e.target.files[0]);
+  });
+
+  // ============================================
+  // АДАПТИВНОСТЬ
+  // ============================================
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+</script>
+
+</body>
+</html>
