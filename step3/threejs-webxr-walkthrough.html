@@ -1280,9 +1280,20 @@
     navHitPoint = null;
   });
 
+  let navMouseDownX = 0, navMouseDownY = 0;
+  renderer.domElement.addEventListener('mousedown', (e) => {
+    navMouseDownX = e.clientX;
+    navMouseDownY = e.clientY;
+  });
+
   renderer.domElement.addEventListener('click', (e) => {
     if (renderer.xr.isPresenting || !navHitPoint) return;
     if (currentMode === 'fps' && fpsControls.isLocked) return;
+
+    // Ignore if mouse moved more than 5px — it was a drag, not a click
+    const dx = e.clientX - navMouseDownX;
+    const dy = e.clientY - navMouseDownY;
+    if (Math.sqrt(dx * dx + dy * dy) > 5) return;
 
     // Target camera position: floor hit point + eye height
     const destCam = new THREE.Vector3(navHitPoint.x, navHitPoint.y + PLAYER_HEIGHT, navHitPoint.z);
