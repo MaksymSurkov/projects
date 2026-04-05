@@ -1336,15 +1336,18 @@
     if (groundPts.length < 3) return;
 
     // Step 2: find the two floor points farthest apart — these are the two ends
-    // Pass 1: start from an arbitrary point, find farthest
-    let ptA = groundPts[0];
+    // Pass 1: find point farthest from groundPts[0]
+    const p0 = groundPts[0];
+    let ptA = p0, maxD1 = 0;
     for (const p of groundPts) {
-      if (p.distanceTo(ptA) > ptA.distanceTo(groundPts[0])) ptA = p;
+      const d = p.distanceTo(p0);
+      if (d > maxD1) { maxD1 = d; ptA = p; }
     }
-    // Pass 2: find the point farthest from ptA → ptC (opposite end)
-    let ptC = groundPts[0];
+    // Pass 2: find point farthest from ptA → ptC (the opposite end)
+    let ptC = p0, maxD2 = 0;
     for (const p of groundPts) {
-      if (p.distanceTo(ptA) > ptC.distanceTo(ptA)) ptC = p;
+      const d = p.distanceTo(ptA);
+      if (d > maxD2) { maxD2 = d; ptC = p; }
     }
 
     // Step 3: find floor point closest to the midpoint of ptA–ptC → ptB (center)
