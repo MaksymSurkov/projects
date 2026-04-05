@@ -413,45 +413,45 @@
 <div id="crosshair"></div>
 <div id="mode-indicator">Orbit Mode</div>
 <div id="position-display"></div>
-<div id="xr-status">Проверка WebXR...</div>
+<div id="xr-status">Checking WebXR...</div>
 
 <div id="controls-panel">
   <button class="btn active" onclick="setOrbitMode()">Orbit</button>
-  <button class="btn" onclick="enterFPSMode()">Прогулка</button>
-  <button class="btn" onclick="toggleGrid()">Сетка</button>
-  <button class="btn" onclick="toggleWireframe()">Каркас</button>
-  <button class="btn" onclick="cycleBackground()">Фон</button>
-  <button class="btn" onclick="fileInput.click()">Загрузить .glb</button>
+  <button class="btn" onclick="enterFPSMode()">Walk</button>
+  <button class="btn" onclick="toggleGrid()">Grid</button>
+  <button class="btn" onclick="toggleWireframe()">Wireframe</button>
+  <button class="btn" onclick="cycleBackground()">Background</button>
+  <button class="btn" onclick="fileInput.click()">Load .glb</button>
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
-  <h3>Режим прогулки</h3>
+  <h3>Walk Mode</h3>
   <p>
-    <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — ходить<br>
-    <span class="key">Мышь</span> — смотреть<br>
-    <span class="key">Shift</span> — бежать<br>
-    <span class="key">Space</span> — вверх · <span class="key">C</span> — вниз<br>
-    <span class="key">Esc</span> — выйти
+    <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — move<br>
+    <span class="key">Mouse</span> — look<br>
+    <span class="key">Shift</span> — run<br>
+    <span class="key">Space</span> — up · <span class="key">C</span> — down<br>
+    <span class="key">Esc</span> — exit
   </p>
-  <p class="start-note">Кликни чтобы начать</p>
+  <p class="start-note">Click to start</p>
 </div>
 
 <div id="start-screen">
   <h2>WebXR Walkthrough</h2>
   <p>
-    Загрузи 3D-модель помещения (.glb / .gltf)<br>
-    и осмотри её в трёх режимах:<br><br>
-    <strong style="color:#4dabf7">Orbit</strong> — крути снаружи &nbsp;
-    <strong style="color:#4dabf7">FPS</strong> — ходи внутри<br>
-    <strong style="color:#4dabf7">VR</strong> — надень шлем &nbsp;
-    <strong style="color:#4dabf7">AR</strong> — наведи камеру телефона
+    Load a 3D room model (.glb / .gltf)<br>
+    and explore it in three modes:<br><br>
+    <strong style="color:#4dabf7">Orbit</strong> — rotate outside &nbsp;
+    <strong style="color:#4dabf7">Walk</strong> — walk inside<br>
+    <strong style="color:#4dabf7">VR</strong> — put on a headset &nbsp;
+    <strong style="color:#4dabf7">AR</strong> — point phone camera
   </p>
-  <button class="btn-start" onclick="fileInput.click()">Загрузить модель</button>
-  <button class="btn-secondary" onclick="loadDemo()">Демо-комната</button>
+  <button class="btn-start" onclick="fileInput.click()">Load Model</button>
+  <button class="btn-secondary" onclick="loadDemo()">The Drawing Room</button>
 </div>
 
-<div id="dropzone"><h2>Перетащи .glb / .gltf сюда</h2></div>
-<div id="loading"><div class="spinner"></div><p>Загрузка...</p></div>
+<div id="dropzone"><h2>Drop .glb / .gltf here</h2></div>
+<div id="loading"><div class="spinner"></div><p id="loading-text">Loading...</p></div>
 <input type="file" id="fileInput" accept=".glb,.gltf" style="display:none">
 
 <!-- ===== СКРИПТЫ ===== -->
@@ -579,7 +579,7 @@
     xrStatus.classList.toggle('supported', vrSupported || arSupported);
 
     if (!vrSupported && !arSupported) {
-      xrStatus.textContent += ' · Нужен шлем или Android Chrome';
+      xrStatus.textContent += ' · Requires headset or Android Chrome';
     }
   }
 
@@ -727,17 +727,16 @@
 
       if (currentModel) {
         const cloned = currentModel.clone();
-        cloned.visible = true; // clone() копирует visible=false от скрытого оригинала
+        cloned.visible = true; // clone() copies visible=false from hidden original
 
-        // Центрируем: смещаем так чтобы низ модели был на y=0, центр на x/z=0
+        // Center: shift so floor is at y=0, centered on x/z
         const box = new THREE.Box3().setFromObject(cloned);
         const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
         cloned.position.set(-center.x, -box.min.y, -center.z);
 
-        // Масштабируем до 0.5 метра (хорошо видный миниатюрный макет)
-        const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim > 0) wrapper.scale.setScalar(0.5 / maxDim);
+        // Real scale — no miniature. The room floor goes to the tapped point,
+        // the phone camera (~1.7m high) ends up inside the room.
+        // wrapper.scale stays at 1 (default)
 
         wrapper.add(cloned);
       } else {
@@ -904,172 +903,83 @@
       (progress) => {
         if (progress.total > 0) {
           const pct = Math.round((progress.loaded / progress.total) * 100);
-          document.querySelector('#loading p').textContent = `Загрузка... ${pct}%`;
+          document.getElementById('loading-text').textContent = `Loading... ${pct}%`;
         }
       },
       (error) => {
-        console.error('Ошибка:', error);
+        console.error('Load error:', error);
         document.getElementById('loading').classList.remove('active');
-        alert('Ошибка загрузки. Проверь формат файла (.glb / .gltf)');
+        alert('Failed to load model. Check file format (.glb / .gltf)');
       }
     );
   }
 
   // ============================================
-  // ДЕМО-КВАРТИРА
+  // THE DRAWING ROOM — load bundled GLB
   // ============================================
   function loadDemo() {
+    document.getElementById('loading').classList.add('active');
     document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('loading-text').textContent = 'Loading The Drawing Room...';
 
-    if (currentModel) scene.remove(currentModel);
+    if (currentModel) {
+      scene.remove(currentModel);
+      currentModel = null;
+    }
 
-    const apt = new THREE.Group();
+    gltfLoader.load(
+      './the_great_drawing_room.glb',
+      (gltf) => {
+        const model = gltf.scene;
 
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8e4de, roughness: 0.92 });
-    const floorMat2 = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.7, metalness: 0.05 });
-    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xf0ede8, roughness: 0.95 });
-    const darkWood = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.6, metalness: 0.1 });
-    const couchBlue = new THREE.MeshStandardMaterial({ color: 0x2c5f8a, roughness: 0.65 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0xaaddff, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.3 });
-    const kitchenMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.4, metalness: 0.1 });
-    const counterMat = new THREE.MeshStandardMaterial({ color: 0x2d2d2d, roughness: 0.2, metalness: 0.3 });
-    const rugMat = new THREE.MeshStandardMaterial({ color: 0x8b4557, roughness: 0.95 });
-    const chairMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.4 });
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.8 });
-    const potMat = new THREE.MeshStandardMaterial({ color: 0xc47a44, roughness: 0.8 });
-    const plantGreen = new THREE.MeshStandardMaterial({ color: 0x2d6a1e, roughness: 0.8 });
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
 
-    const W = 0.12, H = 2.8, RX = 8, RZ = 6;
+        // Auto-scale and center (same logic as file upload)
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        let scale = 1;
+        if (maxDim < 1) scale = 5 / maxDim;
+        else if (maxDim > 100) scale = 20 / maxDim;
+        model.scale.setScalar(scale);
 
-    // Пол и потолок
-    const fl = new THREE.Mesh(new THREE.BoxGeometry(RX, 0.05, RZ), floorMat2);
-    fl.position.set(RX / 2, 0, RZ / 2); fl.receiveShadow = true; apt.add(fl);
+        const scaledBox = new THREE.Box3().setFromObject(model);
+        const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+        const scaledSize = scaledBox.getSize(new THREE.Vector3());
 
-    const ce = new THREE.Mesh(new THREE.BoxGeometry(RX, 0.05, RZ), ceilingMat);
-    ce.position.set(RX / 2, H, RZ / 2); apt.add(ce);
+        model.position.x -= scaledCenter.x;
+        model.position.z -= scaledCenter.z;
+        model.position.y -= scaledBox.min.y;
 
-    // Стены
-    const wBack = new THREE.Mesh(new THREE.BoxGeometry(RX, H, W), wallMat);
-    wBack.position.set(RX / 2, H / 2, 0); wBack.castShadow = true; apt.add(wBack);
+        scene.add(model);
+        currentModel = model;
 
-    const wFrontL = new THREE.Mesh(new THREE.BoxGeometry(2.5, H, W), wallMat);
-    wFrontL.position.set(1.25, H / 2, RZ); apt.add(wFrontL);
-    const wFrontR = new THREE.Mesh(new THREE.BoxGeometry(2.5, H, W), wallMat);
-    wFrontR.position.set(RX - 1.25, H / 2, RZ); apt.add(wFrontR);
-    const wFrontT = new THREE.Mesh(new THREE.BoxGeometry(3, 0.8, W), wallMat);
-    wFrontT.position.set(RX / 2, H - 0.4, RZ); apt.add(wFrontT);
-    const wFrontB = new THREE.Mesh(new THREE.BoxGeometry(3, 0.9, W), wallMat);
-    wFrontB.position.set(RX / 2, 0.45, RZ); apt.add(wFrontB);
+        // Camera inside the room at eye level
+        camera.position.set(0, PLAYER_HEIGHT, scaledSize.z * 0.2);
+        orbitControls.target.set(0, scaledSize.y * 0.4, 0);
+        orbitControls.update();
 
-    const win = new THREE.Mesh(new THREE.BoxGeometry(3, 1.1, 0.03), glassMat);
-    win.position.set(RX / 2, 1.45, RZ); apt.add(win);
-
-    const wLeft = new THREE.Mesh(new THREE.BoxGeometry(W, H, RZ), wallMat);
-    wLeft.position.set(0, H / 2, RZ / 2); wLeft.castShadow = true; apt.add(wLeft);
-    const wRight = new THREE.Mesh(new THREE.BoxGeometry(W, H, RZ), wallMat);
-    wRight.position.set(RX, H / 2, RZ / 2); wRight.castShadow = true; apt.add(wRight);
-
-    // Перегородка
-    const iWL = new THREE.Mesh(new THREE.BoxGeometry(W, H, 2), wallMat);
-    iWL.position.set(5, H / 2, 1); apt.add(iWL);
-    const iWR = new THREE.Mesh(new THREE.BoxGeometry(W, H, 2.5), wallMat);
-    iWR.position.set(5, H / 2, 4.75); apt.add(iWR);
-    const iWT = new THREE.Mesh(new THREE.BoxGeometry(W, 0.7, 1.5), wallMat);
-    iWT.position.set(5, H - 0.35, 2.75); apt.add(iWT);
-
-    // Диван
-    const cb = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.35, 0.85), couchBlue);
-    cb.position.set(2.5, 0.2, 0.7); cb.castShadow = true; apt.add(cb);
-    const cbk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 0.12), couchBlue);
-    cbk.position.set(2.5, 0.55, 0.2); cbk.castShadow = true; apt.add(cbk);
-
-    // Столик
-    const tt = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 0.6), darkWood);
-    tt.position.set(2.5, 0.42, 2.0); tt.castShadow = true; apt.add(tt);
-    [[2.05, 1.75], [2.95, 1.75], [2.05, 2.25], [2.95, 2.25]].forEach(([x, z]) => {
-      const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), darkWood);
-      l.position.set(x, 0.2, z); apt.add(l);
-    });
-
-    // Ковёр
-    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.02, 1.8), rugMat);
-    rug.position.set(2.5, 0.02, 1.8); apt.add(rug);
-
-    // ТВ
-    const tvStand = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 0.35), darkWood);
-    tvStand.position.set(2.5, 0.25, 3.7); tvStand.castShadow = true; apt.add(tvStand);
-    const tv = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 0.04),
-      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.5 }));
-    tv.position.set(2.5, 0.9, 3.72); apt.add(tv);
-    const tvs = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.68, 0.01),
-      new THREE.MeshStandardMaterial({ color: 0x1a2a3a, emissive: 0x0a1520, emissiveIntensity: 0.5 }));
-    tvs.position.set(2.5, 0.9, 3.74); apt.add(tvs);
-
-    // Торшер
-    const lb = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.03, 16), metalMat);
-    lb.position.set(0.5, 0.015, 0.5); apt.add(lb);
-    const lp = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8), metalMat);
-    lp.position.set(0.5, 0.75, 0.5); apt.add(lp);
-    const ls = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 0.25, 16, 1, true),
-      new THREE.MeshStandardMaterial({ color: 0xfff5e0, emissive: 0xffa500, emissiveIntensity: 0.4, side: THREE.DoubleSide }));
-    ls.position.set(0.5, 1.6, 0.5); apt.add(ls);
-    const ll = new THREE.PointLight(0xffcc77, 0.6, 6);
-    ll.position.set(0.5, 1.5, 0.5); ll.castShadow = true; apt.add(ll);
-
-    // Растение
-    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.2, 12), potMat);
-    pot.position.set(4.4, 0.1, 5.2); apt.add(pot);
-    const plant = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), plantGreen);
-    plant.position.set(4.4, 0.35, 5.2); apt.add(plant);
-
-    // Картины
-    [[1.5, 1.6, 0.1, 0x4dabf7], [3.5, 1.5, 0.1, 0xff6b6b]].forEach(([x, y, z, c]) => {
-      const fr = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.03),
-        new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-      fr.position.set(x, y, z); apt.add(fr);
-      const art = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.01),
-        new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.15 }));
-      art.position.set(x, y, z + 0.02); apt.add(art);
-    });
-
-    // Кухня
-    const kb = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.85, 0.6), kitchenMat);
-    kb.position.set(6.65, 0.425, 0.4); kb.castShadow = true; apt.add(kb);
-    const kc = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.04, 0.65), counterMat);
-    kc.position.set(6.65, 0.87, 0.4); apt.add(kc);
-    const ku = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.7, 0.35), kitchenMat);
-    ku.position.set(6.65, 1.85, 0.25); apt.add(ku);
-
-    // Обеденный стол
-    const dt = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.8), darkWood);
-    dt.position.set(6.5, 0.75, 3.5); dt.castShadow = true; apt.add(dt);
-    [[5.95, 3.15], [7.05, 3.15], [5.95, 3.85], [7.05, 3.85]].forEach(([x, z]) => {
-      const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.73, 0.04), darkWood);
-      l.position.set(x, 0.365, z); apt.add(l);
-    });
-
-    // Стулья
-    [[6.0, 2.7, -1], [7.0, 2.7, -1], [6.0, 4.3, 1], [7.0, 4.3, 1]].forEach(([x, z, dir]) => {
-      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.4), chairMat);
-      seat.position.set(x, 0.45, z); apt.add(seat);
-      const back = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.45, 0.03), chairMat);
-      back.position.set(x, 0.7, z + dir * 0.18); apt.add(back);
-    });
-
-    // Свет
-    const kl = new THREE.PointLight(0xfff5e0, 0.5, 8);
-    kl.position.set(6.5, 2.5, 3); kl.castShadow = true; apt.add(kl);
-    const lvl = new THREE.PointLight(0xfff5e0, 0.4, 8);
-    lvl.position.set(2.5, 2.5, 2.5); lvl.castShadow = true; apt.add(lvl);
-
-    scene.add(apt);
-    currentModel = apt;
-
-    camera.position.set(2.5, PLAYER_HEIGHT, 4);
-    orbitControls.target.set(2.5, 1.2, 2);
-    orbitControls.update();
-
-    document.getElementById('position-display').style.display = 'block';
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('position-display').style.display = 'block';
+      },
+      (progress) => {
+        if (progress.total > 0) {
+          const pct = Math.round((progress.loaded / progress.total) * 100);
+          document.getElementById('loading-text').textContent = `Loading... ${pct}%`;
+        }
+      },
+      (error) => {
+        console.error('GLB load error:', error);
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('start-screen').classList.remove('hidden');
+        alert('Could not load the_great_drawing_room.glb.\nMake sure you are running a local server (not file://).\n\nRun: python3 -m http.server 8080\nThen open: http://localhost:8080');
+      }
+    );
   }
 
   // Делаем функции глобальными для onclick
@@ -1095,7 +1005,7 @@
     orbitControls.enabled = false;
     camera.position.y = PLAYER_HEIGHT;
     document.getElementById('fps-hint').style.display = 'block';
-    document.getElementById('mode-indicator').textContent = 'FPS Mode';
+    document.getElementById('mode-indicator').textContent = 'Walk Mode';
     document.querySelectorAll('#controls-panel .btn')[0].classList.remove('active');
     document.querySelectorAll('#controls-panel .btn')[1].classList.add('active');
   }
@@ -1124,7 +1034,7 @@
     // Скрываем обычный UI в XR
     document.getElementById('controls-panel').style.display = 'none';
     document.getElementById('hud-top').style.opacity = '0';
-    document.getElementById('mode-indicator').textContent = renderer.xr.isPresenting ? 'XR Mode' : 'Orbit Mode';
+    document.getElementById('mode-indicator').textContent = 'XR Mode';
 
     // Убираем туман в AR (мешает видеть реальный мир)
     if (scene.fog) scene.fog.density = 0;
