@@ -1175,18 +1175,17 @@
       const session = renderer.xr.getSession();
 
       if (session && !hitTestSourceRequested) {
-        // Always try to request hit-test — works for AR, fails silently for VR
         hitTestSourceRequested = true;
 
         session.requestReferenceSpace('viewer').then((viewerSpace) => {
           session.requestHitTestSource({ space: viewerSpace }).then((source) => {
             hitTestSource = source;
-            console.log('[AR] Hit test ready, blendMode:', session.environmentBlendMode);
           }).catch((err) => {
-            console.log('[AR] Hit test not supported (VR session or no permission):', err.message);
+            // Reset flag so next frame retries (e.g. session not ready yet)
+            hitTestSourceRequested = false;
           });
         }).catch((err) => {
-          console.log('[AR] Viewer space not available:', err.message);
+          hitTestSourceRequested = false;
         });
 
         session.addEventListener('end', () => {
