@@ -1310,30 +1310,47 @@
     const center = bbox.getCenter(new THREE.Vector3());
     const size   = bbox.getSize(new THREE.Vector3());
     const rayTop = bbox.max.y + 1;
-
-    // Determine the longer horizontal axis — place 3 waypoints along it
-    const useZ = size.z >= size.x; // true → axis is Z, false → axis is X
-    // Fractions along the long axis: near one end, center, near other end
     const fractions = [0.2, 0.5, 0.8];
 
-    // Search radius: try multiple offsets perpendicular to the main axis
-    // to find a hit even if the exact center-line has a gap (wall/pillar)
-    const perpOffsets = [0, -size[useZ ? 'x' : 'z'] * 0.15, size[useZ ? 'x' : 'z'] * 0.15];
-
-    for (const frac of fractions) {
-      let floorY = null;
-      let hitX = center.x, hitZ = center.z;
-
-      for (const perp of perpOffsets) {
-        const tx = useZ ? center.x + perp : bbox.min.x + size.x * frac;
-        const tz = useZ ? bbox.min.z + size.z * frac : center.z + perp;
-        const y = findFloorY(model, tx, tz, rayTop);
-        if (y !== null) { floorY = y; hitX = tx; hitZ = tz; break; }
+    // Try placing 3 waypoints along a given axis (useZ=true → along Z, false → along X).
+    // For each fraction, search at the center line and several perpendicular offsets
+    // until a floor hit is found.
+    function tryAxis(useZ) {
+      const perpSize = size[useZ ? 'x' : 'z'];
+      const perpOffsets = [0, -perpSize * 0.15, perpSize * 0.15,
+                              -perpSize * 0.3,  perpSize * 0.3];
+      const pts = [];
+      for (const frac of fractions) {
+        let found = null;
+        for (const off of perpOffsets) {
+          const tx = useZ ? center.x + off : bbox.min.x + size.x * frac;
+          const tz = useZ ? bbox.min.z + size.z * frac : center.z + off;
+          const y  = findFloorY(model, tx, tz, rayTop);
+          if (y !== null) { found = new THREE.Vector3(tx, y, tz); break; }
+        }
+        if (found) pts.push(found);
       }
+      return pts;
+    }
 
-      if (floorY === null) continue; // no floor found at this fraction
+    const ptsZ = tryAxis(true);
+    const ptsX = tryAxis(false);
 
-      const pos = new THREE.Vector3(hitX, floorY, hitZ);
+    // Spread = distance from first to last waypoint along the chosen axis
+    const spreadOf = (pts, axis) =>
+      pts.length >= 2 ? Math.abs(pts[pts.length - 1][axis] - pts[0][axis]) : 0;
+
+    let chosen;
+    if (ptsZ.length !== ptsX.length) {
+      chosen = ptsZ.length > ptsX.length ? ptsZ : ptsX;
+    } else {
+      // Same hit count — pick the axis where waypoints are more spread out
+      const sZ = spreadOf(ptsZ, 'z');
+      const sX = spreadOf(ptsX, 'x');
+      chosen = sZ >= sX ? ptsZ : ptsX;
+    }
+
+    for (const pos of chosen) {
       const marker = createPresetMarker();
       marker.position.copy(pos);
       marker.position.y += 0.015;
