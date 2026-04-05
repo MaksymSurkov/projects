@@ -466,7 +466,7 @@
     <strong style="color:#4dabf7">AR</strong> — point phone camera
   </p>
   <button class="btn-start" onclick="fileInput.click()">Load Model</button>
-  <button class="btn-secondary" onclick="loadDemo()">The Drawing Room</button>
+  <button class="btn-secondary" onclick="loadDemo()">Art Gallery Tour</button>
 </div>
 
 <div id="dropzone"><h2>Drop .glb / .gltf here</h2></div>
@@ -916,12 +916,12 @@
   }
 
   // ============================================
-  // THE DRAWING ROOM — load bundled GLB
+  // ART GALLERY TOUR — load bundled GLB
   // ============================================
   function loadDemo() {
     document.getElementById('loading').classList.add('active');
     document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('loading-text').textContent = 'Loading The Drawing Room...';
+    document.getElementById('loading-text').textContent = 'Loading Art Gallery Tour...';
 
     if (currentModel) { scene.remove(currentModel); currentModel = null; }
     if (typeof clearWaypoints === 'function') clearWaypoints();
@@ -1289,11 +1289,43 @@
     currentWpIndex = -1;
 
     const size = bbox.getSize(new THREE.Vector3());
-    // Step: aim for ~5-8 points along shortest axis
     const step = Math.max(0.8, Math.min(size.x, size.z) / 5);
     const downRay = new THREE.Raycaster();
-    const placed = [];
 
+    // Pass 1: find the true floor Y — the most common/lowest upward-facing surface
+    // Cast a dense grid of rays and collect all lowest-y hits per column
+    const floorYSamples = [];
+    const sampleStep = step * 0.5;
+    const sxCount = Math.ceil(size.x / sampleStep) + 1;
+    const szCount = Math.ceil(size.z / sampleStep) + 1;
+
+    for (let xi = 0; xi < sxCount; xi++) {
+      for (let zi = 0; zi < szCount; zi++) {
+        const x = bbox.min.x + xi * sampleStep;
+        const z = bbox.min.z + zi * sampleStep;
+        downRay.set(new THREE.Vector3(x, bbox.max.y + 1, z), new THREE.Vector3(0, -1, 0));
+        const hits = downRay.intersectObject(model, true);
+        let lowestY = null;
+        for (const hit of hits) {
+          if (!hit.face) continue;
+          const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+          if (wn.y > 0.5) {
+            if (lowestY === null || hit.point.y < lowestY) lowestY = hit.point.y;
+          }
+        }
+        if (lowestY !== null) floorYSamples.push(lowestY);
+      }
+    }
+
+    if (floorYSamples.length === 0) return;
+
+    // Floor Y = median of lowest samples (robust against outliers)
+    floorYSamples.sort((a, b) => a - b);
+    const floorY = floorYSamples[Math.floor(floorYSamples.length * 0.1)]; // 10th percentile = true floor
+    const floorTolerance = Math.max(0.3, size.y * 0.08); // allow slight variation
+
+    // Pass 2: place waypoints only on surfaces near floorY
+    const placed = [];
     const xCount = Math.ceil(size.x / step) + 1;
     const zCount = Math.ceil(size.z / step) + 1;
 
@@ -1301,24 +1333,21 @@
       for (let zi = 0; zi < zCount; zi++) {
         const x = bbox.min.x + xi * step;
         const z = bbox.min.z + zi * step;
-
-        downRay.set(
-          new THREE.Vector3(x, bbox.max.y + 1, z),
-          new THREE.Vector3(0, -1, 0)
-        );
-
+        downRay.set(new THREE.Vector3(x, bbox.max.y + 1, z), new THREE.Vector3(0, -1, 0));
         const hits = downRay.intersectObject(model, true);
-        // Collect all floor candidates (upward normal), pick the lowest y = actual floor
-        let floorHit = null;
+
+        let bestHit = null;
         for (const hit of hits) {
           if (!hit.face) continue;
           const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-          if (wn.y > 0.5) {
-            if (!floorHit || hit.point.y < floorHit.point.y) floorHit = hit;
+          // Must be upward-facing AND near floor level
+          if (wn.y > 0.5 && Math.abs(hit.point.y - floorY) <= floorTolerance) {
+            if (!bestHit || hit.point.y < bestHit.point.y) bestHit = hit;
           }
         }
-        if (floorHit) {
-          const pos = floorHit.point.clone();
+
+        if (bestHit) {
+          const pos = bestHit.point.clone();
           if (!placed.some(p => p.distanceTo(pos) < step * 0.75)) {
             placed.push(pos);
             const marker = createPresetMarker();
