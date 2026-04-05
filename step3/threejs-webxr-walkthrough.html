@@ -1302,6 +1302,28 @@
     return best;
   }
 
+  // Проверяет что точка находится внутри здания:
+  // кидает 4 горизонтальных луча (N/S/E/W) на высоте 1м от пола.
+  // Если минимум 2 луча попадают в стену в пределах maxDist — точка внутри.
+  function isInsideBuilding(model, floorPos, maxDist) {
+    const origin = floorPos.clone();
+    origin.y += 1.0;
+    const dirs = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1),
+    ];
+    const ray = new THREE.Raycaster();
+    ray.far = maxDist;
+    let walls = 0;
+    for (const dir of dirs) {
+      ray.set(origin, dir);
+      if (ray.intersectObject(model, true).length > 0) walls++;
+    }
+    return walls >= 2;
+  }
+
   function autoGenerateWaypoints(model, bbox) {
     presetWaypoints.forEach(wp => scene.remove(wp.marker));
     presetWaypoints.length = 0;
@@ -1335,25 +1357,32 @@
     const groundPts = floorPts.filter(p => Math.abs(p.y - floorY) <= tolerance);
     if (groundPts.length < 3) return;
 
+    // Filter to INTERIOR points only: must have walls in ≥2 directions within maxWallDist
+    const maxWallDist = Math.min(25, Math.max(size.x, size.z) * 0.4);
+    const interiorPts = groundPts.filter(p => isInsideBuilding(model, p, maxWallDist));
+    // Fallback to all ground points if interior filter is too strict
+    const pts = interiorPts.length >= 3 ? interiorPts : groundPts;
+    console.log('[WP] interior pts:', interiorPts.length, '/ ground pts:', groundPts.length, '/ maxWallDist:', maxWallDist.toFixed(1));
+
     // Step 2: find the two floor points farthest apart — these are the two ends
-    // Pass 1: find point farthest from groundPts[0]
-    const p0 = groundPts[0];
+    // Pass 1: find point farthest from pts[0]
+    const p0 = pts[0];
     let ptA = p0, maxD1 = 0;
-    for (const p of groundPts) {
+    for (const p of pts) {
       const d = p.distanceTo(p0);
       if (d > maxD1) { maxD1 = d; ptA = p; }
     }
     // Pass 2: find point farthest from ptA → ptC (the opposite end)
     let ptC = p0, maxD2 = 0;
-    for (const p of groundPts) {
+    for (const p of pts) {
       const d = p.distanceTo(ptA);
       if (d > maxD2) { maxD2 = d; ptC = p; }
     }
 
     // Step 3: find floor point closest to the midpoint of ptA–ptC → ptB (center)
     const mid = ptA.clone().add(ptC).multiplyScalar(0.5);
-    let ptB = groundPts[0];
-    for (const p of groundPts) {
+    let ptB = pts[0];
+    for (const p of pts) {
       if (p.distanceTo(mid) < ptB.distanceTo(mid)) ptB = p;
     }
 
