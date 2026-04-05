@@ -890,7 +890,9 @@
         scene.add(model);
         currentModel = model;
 
-        autoGenerateWaypoints(model, scaledBox);
+        // Recompute bbox AFTER repositioning so waypoints align with actual model position
+        const finalBox = new THREE.Box3().setFromObject(model);
+        autoGenerateWaypoints(model, finalBox);
         startInsideRoom();
 
         document.getElementById('loading').classList.remove('active');
@@ -954,7 +956,9 @@
         scene.add(model);
         currentModel = model;
 
-        autoGenerateWaypoints(model, scaledBox);
+        // Recompute bbox AFTER repositioning so waypoints align with actual model position
+        const finalBox = new THREE.Box3().setFromObject(model);
+        autoGenerateWaypoints(model, finalBox);
         startInsideRoom();
 
         document.getElementById('loading').classList.remove('active');
@@ -1347,14 +1351,7 @@
         if (bestHit) {
           const pos = bestHit.point.clone();
 
-          // Confirm point is INSIDE: cast ray upward from floor+0.1m,
-          // it must hit a ceiling/wall above (= we're inside the building)
-          const upRay = new THREE.Raycaster();
-          upRay.set(pos.clone().setY(pos.y + 0.1), new THREE.Vector3(0, 1, 0));
-          const upHits = upRay.intersectObject(model, true);
-          const isInside = upHits.length > 0;
-
-          if (isInside && !placed.some(p => p.distanceTo(pos) < step * 0.75)) {
+          if (!placed.some(p => p.distanceTo(pos) < step * 0.75)) {
             placed.push(pos);
             const marker = createPresetMarker();
             marker.position.copy(pos);
@@ -1368,22 +1365,25 @@
   }
 
   function startInsideRoom() {
-    // Place camera at first waypoint, looking toward center of scene
     if (presetWaypoints.length === 0) return;
 
-    // Pick a waypoint near the center of the bbox
+    // Find centroid of all waypoints, then pick the one closest to it
+    const centroid = new THREE.Vector3();
+    presetWaypoints.forEach(wp => centroid.add(wp.position));
+    centroid.divideScalar(presetWaypoints.length);
+
     let best = presetWaypoints[0];
     let minDist = Infinity;
     presetWaypoints.forEach(wp => {
-      const d = wp.position.length(); // distance from scene center (0,0,0)
+      const d = wp.position.distanceTo(centroid);
       if (d < minDist) { minDist = d; best = wp; }
     });
     currentWpIndex = presetWaypoints.indexOf(best);
 
     const p = best.position;
     camera.position.set(p.x, p.y + PLAYER_HEIGHT, p.z);
-    // Look toward scene center
-    const fwd = new THREE.Vector3(-p.x, 0, -p.z).normalize();
+    // Look toward centroid (or forward if already at centroid)
+    const fwd = new THREE.Vector3(centroid.x - p.x, 0, centroid.z - p.z).normalize();
     if (fwd.length() < 0.01) fwd.set(0, 0, -1);
     orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
     orbitControls.update();
