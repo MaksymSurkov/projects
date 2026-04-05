@@ -890,12 +890,8 @@
         scene.add(model);
         currentModel = model;
 
-        const dist = Math.max(scaledSize.x, scaledSize.z) * 1.2;
-        camera.position.set(dist, scaledSize.y * 0.8, dist);
-        orbitControls.target.set(0, scaledSize.y * 0.4, 0);
-        orbitControls.update();
-
         autoGenerateWaypoints(model, scaledBox);
+        startInsideRoom();
 
         document.getElementById('loading').classList.remove('active');
         document.getElementById('position-display').style.display = 'block';
@@ -958,12 +954,8 @@
         scene.add(model);
         currentModel = model;
 
-        // Camera inside the room at eye level
-        camera.position.set(0, PLAYER_HEIGHT, scaledSize.z * 0.2);
-        orbitControls.target.set(0, scaledSize.y * 0.4, 0);
-        orbitControls.update();
-
         autoGenerateWaypoints(model, scaledBox);
+        startInsideRoom();
 
         document.getElementById('loading').classList.remove('active');
         document.getElementById('position-display').style.display = 'block';
@@ -1170,6 +1162,12 @@
       }
 
       if (currentMode === 'orbit') {
+        // Keep target 2m in front of camera → LMB drag = look around in place
+        if (!navAnimating) {
+          const fwd = new THREE.Vector3();
+          camera.getWorldDirection(fwd);
+          orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
+        }
         orbitControls.update();
       }
     }
@@ -1348,7 +1346,15 @@
 
         if (bestHit) {
           const pos = bestHit.point.clone();
-          if (!placed.some(p => p.distanceTo(pos) < step * 0.75)) {
+
+          // Confirm point is INSIDE: cast ray upward from floor+0.1m,
+          // it must hit a ceiling/wall above (= we're inside the building)
+          const upRay = new THREE.Raycaster();
+          upRay.set(pos.clone().setY(pos.y + 0.1), new THREE.Vector3(0, 1, 0));
+          const upHits = upRay.intersectObject(model, true);
+          const isInside = upHits.length > 0;
+
+          if (isInside && !placed.some(p => p.distanceTo(pos) < step * 0.75)) {
             placed.push(pos);
             const marker = createPresetMarker();
             marker.position.copy(pos);
@@ -1361,11 +1367,34 @@
     }
   }
 
+  function startInsideRoom() {
+    // Place camera at first waypoint, looking toward center of scene
+    if (presetWaypoints.length === 0) return;
+
+    // Pick a waypoint near the center of the bbox
+    let best = presetWaypoints[0];
+    let minDist = Infinity;
+    presetWaypoints.forEach(wp => {
+      const d = wp.position.length(); // distance from scene center (0,0,0)
+      if (d < minDist) { minDist = d; best = wp; }
+    });
+    currentWpIndex = presetWaypoints.indexOf(best);
+
+    const p = best.position;
+    camera.position.set(p.x, p.y + PLAYER_HEIGHT, p.z);
+    // Look toward scene center
+    const fwd = new THREE.Vector3(-p.x, 0, -p.z).normalize();
+    if (fwd.length() < 0.01) fwd.set(0, 0, -1);
+    orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
+    orbitControls.update();
+  }
+
   function flyTo(destFloorPoint) {
     const destCam = new THREE.Vector3(destFloorPoint.x, destFloorPoint.y + PLAYER_HEIGHT, destFloorPoint.z);
-    const lookDir = new THREE.Vector3().subVectors(orbitControls.target, camera.position).normalize();
-    const lookDist = Math.max(1.5, camera.position.distanceTo(orbitControls.target));
-    const destTarget = destCam.clone().add(lookDir.multiplyScalar(lookDist));
+    // Target stays 2m ahead in current look direction → lands in "look around" mode
+    const lookDir = new THREE.Vector3();
+    camera.getWorldDirection(lookDir);
+    const destTarget = destCam.clone().addScaledVector(lookDir, 2.0);
 
     navAnimFrom.cam.copy(camera.position);
     navAnimFrom.target.copy(orbitControls.target);
