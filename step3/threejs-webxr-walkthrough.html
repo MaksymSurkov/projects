@@ -441,6 +441,8 @@
   <button class="btn" onclick="toggleWireframe()">Wireframe</button>
   <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
+  <button class="btn" onclick="addWaypoint()" id="btn-add-wp">+ Waypoint</button>
+  <button class="btn" onclick="clearWaypoints()" id="btn-clear-wp" style="display:none">Clear WP</button>
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
@@ -854,10 +856,8 @@
 
     const url = URL.createObjectURL(file);
 
-    if (currentModel) {
-      scene.remove(currentModel);
-      currentModel = null;
-    }
+    if (currentModel) { scene.remove(currentModel); currentModel = null; }
+    if (typeof clearWaypoints === 'function') clearWaypoints();
 
     gltfLoader.load(
       url,
@@ -922,10 +922,8 @@
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('loading-text').textContent = 'Loading The Drawing Room...';
 
-    if (currentModel) {
-      scene.remove(currentModel);
-      currentModel = null;
-    }
+    if (currentModel) { scene.remove(currentModel); currentModel = null; }
+    if (typeof clearWaypoints === 'function') clearWaypoints();
 
     gltfLoader.load(
       './the_great_drawing_room.glb',
@@ -1170,6 +1168,28 @@
       }
     }
 
+    // Waypoint fly animation
+    if (wpAnimating) {
+      wpAnimProgress = Math.min(wpAnimProgress + delta * 1.5, 1);
+      // Ease in-out cubic
+      const t = wpAnimProgress < 0.5
+        ? 4 * wpAnimProgress ** 3
+        : 1 - Math.pow(-2 * wpAnimProgress + 2, 3) / 2;
+      camera.position.lerpVectors(wpAnimFrom.cam, wpAnimTo.cam, t);
+      orbitControls.target.lerpVectors(wpAnimFrom.target, wpAnimTo.target, t);
+      orbitControls.update();
+      if (wpAnimProgress >= 1) wpAnimating = false;
+    }
+
+    // Waypoint pulse
+    if (waypoints.length > 0) {
+      const pulse = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 2.5);
+      waypoints.forEach(wp => {
+        wp.marker.children[0].material.opacity = pulse * 0.9; // ring
+        wp.marker.children[1].material.opacity = pulse * 0.15; // disc
+      });
+    }
+
     // AR hit-test — use source requested at sessionstart
     if (frame && hitTestSource) {
       const referenceSpace = renderer.xr.getReferenceSpace();
@@ -1195,6 +1215,133 @@
 
     renderer.render(scene, camera);
   });
+
+  // ============================================
+  // WAYPOINTS
+  // ============================================
+  const waypoints = [];
+  let wpAnimating = false;
+  let wpAnimProgress = 0;
+  const wpAnimFrom = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
+  const wpAnimTo   = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
+
+  function createWaypointMarker(index) {
+    const group = new THREE.Group();
+
+    // Outer ring on floor
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.28, 0.38, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x4dabf7, transparent: true, opacity: 0.9, depthTest: false, side: THREE.DoubleSide })
+    );
+    ring.renderOrder = 10;
+    group.add(ring);
+
+    // Inner translucent disc
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.25, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x4dabf7, transparent: true, opacity: 0.15, depthTest: false })
+    );
+    disc.renderOrder = 10;
+    group.add(disc);
+
+    // Number label as canvas sprite
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#4dabf7';
+    ctx.beginPath(); ctx.arc(64, 64, 56, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 6; ctx.stroke();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 64px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(index), 64, 66);
+
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), depthTest: false })
+    );
+    sprite.position.y = 0.65;
+    sprite.scale.set(0.55, 0.55, 1);
+    sprite.renderOrder = 11;
+    group.add(sprite);
+
+    return group;
+  }
+
+  function addWaypoint() {
+    if (waypoints.length >= 9) return;
+
+    const index = waypoints.length + 1;
+    const camPos    = camera.position.clone();
+    const targetPos = orbitControls.target.clone();
+
+    // Snap marker to floor (y = 0.01) below camera x/z
+    const markerPos = new THREE.Vector3(camPos.x, 0.01, camPos.z);
+
+    const marker = createWaypointMarker(index);
+    marker.position.copy(markerPos);
+    scene.add(marker);
+
+    waypoints.push({ index, camPos, targetPos, marker });
+
+    document.getElementById('btn-clear-wp').style.display = '';
+    if (index >= 9) document.getElementById('btn-add-wp').style.display = 'none';
+  }
+
+  function navigateToWaypoint(wp) {
+    if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
+
+    wpAnimFrom.cam.copy(camera.position);
+    wpAnimFrom.target.copy(orbitControls.target);
+    wpAnimTo.cam.copy(wp.camPos);
+    wpAnimTo.target.copy(wp.targetPos);
+    wpAnimProgress = 0;
+    wpAnimating = true;
+  }
+
+  function clearWaypoints() {
+    waypoints.forEach(wp => scene.remove(wp.marker));
+    waypoints.length = 0;
+    document.getElementById('btn-clear-wp').style.display = 'none';
+    document.getElementById('btn-add-wp').style.display = '';
+  }
+
+  // Raycasting — click on marker to fly there
+  const wpRaycaster = new THREE.Raycaster();
+  const wpMouse = new THREE.Vector2();
+
+  renderer.domElement.addEventListener('click', (e) => {
+    if (renderer.xr.isPresenting || waypoints.length === 0) return;
+    if (currentMode === 'fps' && fpsControls.isLocked) return;
+
+    wpMouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    wpMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    wpRaycaster.setFromCamera(wpMouse, camera);
+
+    const clickables = [];
+    waypoints.forEach(wp => wp.marker.traverse(c => { if (c.isMesh || c.isSprite) clickables.push(c); }));
+
+    const hits = wpRaycaster.intersectObjects(clickables);
+    if (hits.length > 0) {
+      const clicked = hits[0].object;
+      for (const wp of waypoints) {
+        let found = false;
+        wp.marker.traverse(c => { if (c === clicked) found = true; });
+        if (found) { navigateToWaypoint(wp); break; }
+      }
+    }
+  });
+
+  // Hide markers in XR, restore on exit
+  renderer.xr.addEventListener('sessionstart', () => {
+    waypoints.forEach(wp => { wp.marker.visible = false; });
+  });
+  renderer.xr.addEventListener('sessionend', () => {
+    waypoints.forEach(wp => { wp.marker.visible = true; });
+  });
+
+  window.addWaypoint   = addWaypoint;
+  window.clearWaypoints = clearWaypoints;
 
   // ============================================
   // UI
