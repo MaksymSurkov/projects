@@ -441,8 +441,6 @@
   <button class="btn" onclick="toggleWireframe()">Wireframe</button>
   <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
-  <button class="btn" onclick="addWaypoint()" id="btn-add-wp">+ Waypoint</button>
-  <button class="btn" onclick="clearWaypoints()" id="btn-clear-wp" style="display:none">Clear WP</button>
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
@@ -1049,6 +1047,7 @@
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
     if (currentModel) currentModel.visible = false;
+    navReticle.visible = false;
 
     // Tap handler — works for both transient (mobile screen tap) and controller
     session.addEventListener('select', () => {
@@ -1168,26 +1167,22 @@
       }
     }
 
-    // Waypoint fly animation
-    if (wpAnimating) {
-      wpAnimProgress = Math.min(wpAnimProgress + delta * 1.5, 1);
-      // Ease in-out cubic
-      const t = wpAnimProgress < 0.5
-        ? 4 * wpAnimProgress ** 3
-        : 1 - Math.pow(-2 * wpAnimProgress + 2, 3) / 2;
-      camera.position.lerpVectors(wpAnimFrom.cam, wpAnimTo.cam, t);
-      orbitControls.target.lerpVectors(wpAnimFrom.target, wpAnimTo.target, t);
+    // Floor navigation fly animation
+    if (navAnimating) {
+      navAnimProgress = Math.min(navAnimProgress + delta * 1.5, 1);
+      const t = navAnimProgress < 0.5
+        ? 4 * navAnimProgress ** 3
+        : 1 - Math.pow(-2 * navAnimProgress + 2, 3) / 2;
+      camera.position.lerpVectors(navAnimFrom.cam, navAnimTo.cam, t);
+      orbitControls.target.lerpVectors(navAnimFrom.target, navAnimTo.target, t);
       orbitControls.update();
-      if (wpAnimProgress >= 1) wpAnimating = false;
+      if (navAnimProgress >= 1) navAnimating = false;
     }
 
-    // Waypoint pulse
-    if (waypoints.length > 0) {
-      const pulse = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 2.5);
-      waypoints.forEach(wp => {
-        wp.marker.children[0].material.opacity = pulse * 0.9; // ring
-        wp.marker.children[1].material.opacity = pulse * 0.15; // disc
-      });
+    // Nav reticle pulse
+    if (navReticle.visible) {
+      const pulse = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 4);
+      navRing.material.opacity = pulse * 0.85;
     }
 
     // AR hit-test — use source requested at sessionstart
@@ -1217,131 +1212,98 @@
   });
 
   // ============================================
-  // WAYPOINTS
+  // MATTERPORT-STYLE FLOOR NAVIGATION
+  // Circle follows cursor on floor, click → fly there
   // ============================================
-  const waypoints = [];
-  let wpAnimating = false;
-  let wpAnimProgress = 0;
-  const wpAnimFrom = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
-  const wpAnimTo   = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
+  let navAnimating = false;
+  let navAnimProgress = 0;
+  const navAnimFrom = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
+  const navAnimTo   = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
+  let navHitPoint = null;
 
-  function createWaypointMarker(index) {
-    const group = new THREE.Group();
+  // Floor reticle — ring + inner dot
+  const navReticle = new THREE.Group();
 
-    // Outer ring on floor
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.28, 0.38, 32).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0x4dabf7, transparent: true, opacity: 0.9, depthTest: false, side: THREE.DoubleSide })
-    );
-    ring.renderOrder = 10;
-    group.add(ring);
+  const navRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.18, 0.26, 32).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthTest: false, side: THREE.DoubleSide })
+  );
+  navRing.renderOrder = 20;
+  navReticle.add(navRing);
 
-    // Inner translucent disc
-    const disc = new THREE.Mesh(
-      new THREE.CircleGeometry(0.25, 32).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0x4dabf7, transparent: true, opacity: 0.15, depthTest: false })
-    );
-    disc.renderOrder = 10;
-    group.add(disc);
+  const navDot = new THREE.Mesh(
+    new THREE.CircleGeometry(0.05, 16).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthTest: false })
+  );
+  navDot.renderOrder = 20;
+  navReticle.add(navDot);
 
-    // Number label as canvas sprite
-    const canvas = document.createElement('canvas');
-    canvas.width = 128; canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#4dabf7';
-    ctx.beginPath(); ctx.arc(64, 64, 56, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 6; ctx.stroke();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 64px monospace';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(index), 64, 66);
+  navReticle.visible = false;
+  scene.add(navReticle);
 
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), depthTest: false })
-    );
-    sprite.position.y = 0.65;
-    sprite.scale.set(0.55, 0.55, 1);
-    sprite.renderOrder = 11;
-    group.add(sprite);
+  // Raycaster for floor detection
+  const navRaycaster = new THREE.Raycaster();
+  const navMouse = new THREE.Vector2();
 
-    return group;
-  }
+  renderer.domElement.addEventListener('mousemove', (e) => {
+    if (renderer.xr.isPresenting || !currentModel || currentMode === 'fps') {
+      navReticle.visible = false;
+      navHitPoint = null;
+      return;
+    }
 
-  function addWaypoint() {
-    if (waypoints.length >= 9) return;
+    navMouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    navMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    navRaycaster.setFromCamera(navMouse, camera);
 
-    const index = waypoints.length + 1;
-    const camPos    = camera.position.clone();
-    const targetPos = orbitControls.target.clone();
+    const hits = navRaycaster.intersectObject(currentModel, true);
+    navHitPoint = null;
+    navReticle.visible = false;
 
-    // Snap marker to floor (y = 0.01) below camera x/z
-    const markerPos = new THREE.Vector3(camPos.x, 0.01, camPos.z);
-
-    const marker = createWaypointMarker(index);
-    marker.position.copy(markerPos);
-    scene.add(marker);
-
-    waypoints.push({ index, camPos, targetPos, marker });
-
-    document.getElementById('btn-clear-wp').style.display = '';
-    if (index >= 9) document.getElementById('btn-add-wp').style.display = 'none';
-  }
-
-  function navigateToWaypoint(wp) {
-    if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
-
-    wpAnimFrom.cam.copy(camera.position);
-    wpAnimFrom.target.copy(orbitControls.target);
-    wpAnimTo.cam.copy(wp.camPos);
-    wpAnimTo.target.copy(wp.targetPos);
-    wpAnimProgress = 0;
-    wpAnimating = true;
-  }
-
-  function clearWaypoints() {
-    waypoints.forEach(wp => scene.remove(wp.marker));
-    waypoints.length = 0;
-    document.getElementById('btn-clear-wp').style.display = 'none';
-    document.getElementById('btn-add-wp').style.display = '';
-  }
-
-  // Raycasting — click on marker to fly there
-  const wpRaycaster = new THREE.Raycaster();
-  const wpMouse = new THREE.Vector2();
-
-  renderer.domElement.addEventListener('click', (e) => {
-    if (renderer.xr.isPresenting || waypoints.length === 0) return;
-    if (currentMode === 'fps' && fpsControls.isLocked) return;
-
-    wpMouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
-    wpMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    wpRaycaster.setFromCamera(wpMouse, camera);
-
-    const clickables = [];
-    waypoints.forEach(wp => wp.marker.traverse(c => { if (c.isMesh || c.isSprite) clickables.push(c); }));
-
-    const hits = wpRaycaster.intersectObjects(clickables);
-    if (hits.length > 0) {
-      const clicked = hits[0].object;
-      for (const wp of waypoints) {
-        let found = false;
-        wp.marker.traverse(c => { if (c === clicked) found = true; });
-        if (found) { navigateToWaypoint(wp); break; }
+    for (const hit of hits) {
+      if (!hit.face) continue;
+      // World-space normal — check it points up (floor surface)
+      const worldNormal = hit.face.normal.clone()
+        .transformDirection(hit.object.matrixWorld);
+      if (worldNormal.y > 0.5) {
+        navHitPoint = hit.point.clone();
+        navReticle.position.copy(navHitPoint);
+        navReticle.position.y += 0.01;
+        navReticle.visible = true;
+        break;
       }
     }
   });
 
-  // Hide markers in XR, restore on exit
-  renderer.xr.addEventListener('sessionstart', () => {
-    waypoints.forEach(wp => { wp.marker.visible = false; });
-  });
-  renderer.xr.addEventListener('sessionend', () => {
-    waypoints.forEach(wp => { wp.marker.visible = true; });
+  renderer.domElement.addEventListener('mouseleave', () => {
+    navReticle.visible = false;
+    navHitPoint = null;
   });
 
-  window.addWaypoint   = addWaypoint;
-  window.clearWaypoints = clearWaypoints;
+  renderer.domElement.addEventListener('click', (e) => {
+    if (renderer.xr.isPresenting || !navHitPoint) return;
+    if (currentMode === 'fps' && fpsControls.isLocked) return;
+
+    // Target camera position: floor hit point + eye height
+    const destCam = new THREE.Vector3(navHitPoint.x, navHitPoint.y + PLAYER_HEIGHT, navHitPoint.z);
+
+    // Maintain current look direction & distance
+    const lookDir = new THREE.Vector3()
+      .subVectors(orbitControls.target, camera.position)
+      .normalize();
+    const lookDist = camera.position.distanceTo(orbitControls.target);
+    const destTarget = destCam.clone().add(lookDir.multiplyScalar(lookDist));
+
+    navAnimFrom.cam.copy(camera.position);
+    navAnimFrom.target.copy(orbitControls.target);
+    navAnimTo.cam.copy(destCam);
+    navAnimTo.target.copy(destTarget);
+    navAnimProgress = 0;
+    navAnimating = true;
+
+    // Switch to orbit if in walk mode
+    if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
+  });
 
   // ============================================
   // UI
