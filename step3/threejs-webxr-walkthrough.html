@@ -723,47 +723,52 @@
     console.log('[AR] onARSelect called, placing at', pos);
 
     if (!arPlacedModel) {
+      const wrapper = new THREE.Group();
+
       if (currentModel) {
-        arPlacedModel = currentModel.clone();
-        // Сбрасываем позицию клона (у оригинала она смещена для центровки)
-        arPlacedModel.position.set(0, 0, 0);
+        const cloned = currentModel.clone();
+        cloned.visible = true; // clone() копирует visible=false от скрытого оригинала
 
-        // Масштабируем до ~1 метра для AR
-        const box = new THREE.Box3().setFromObject(arPlacedModel);
+        // Центрируем: смещаем так чтобы низ модели был на y=0, центр на x/z=0
+        const box = new THREE.Box3().setFromObject(cloned);
+        const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
+        cloned.position.set(-center.x, -box.min.y, -center.z);
+
+        // Масштабируем до 0.5 метра (хорошо видный миниатюрный макет)
         const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim > 0) arPlacedModel.scale.setScalar(1.0 / maxDim);
+        if (maxDim > 0) wrapper.scale.setScalar(0.5 / maxDim);
 
-        scene.add(arPlacedModel);
+        wrapper.add(cloned);
       } else {
-        // Демо-объект: используем MeshBasicMaterial — виден без освещения
-        const demoGroup = new THREE.Group();
-
+        // Нет модели — показываем яркий демо-домик (MeshBasicMaterial — виден без освещения)
         const base = new THREE.Mesh(
-          new THREE.BoxGeometry(0.3, 0.15, 0.3),
+          new THREE.BoxGeometry(0.3, 0.2, 0.3),
           new THREE.MeshBasicMaterial({ color: 0xff4444 })
         );
-        base.position.y = 0.075;
-        demoGroup.add(base);
+        base.position.y = 0.1;
+        wrapper.add(base);
 
         const roof = new THREE.Mesh(
-          new THREE.ConeGeometry(0.22, 0.15, 4),
+          new THREE.ConeGeometry(0.25, 0.2, 4),
           new THREE.MeshBasicMaterial({ color: 0xffaa00 })
         );
-        roof.position.y = 0.225;
+        roof.position.y = 0.3;
         roof.rotation.y = Math.PI / 4;
-        demoGroup.add(roof);
+        wrapper.add(roof);
 
-        arPlacedModel = demoGroup;
-        scene.add(arPlacedModel);
-        console.log('[AR] Demo house created and added to scene');
+        console.log('[AR] Demo house created (no model loaded)');
       }
+
+      arPlacedModel = wrapper;
+      scene.add(arPlacedModel);
     }
 
-    // Позиция — берём из матрицы reticle
+    // Позиция из reticle
     arPlacedModel.position.copy(pos);
-    // Y-вращение от reticle (горизонтальная поверхность)
-    arPlacedModel.quaternion.setFromRotationMatrix(arReticle.matrix);
+    // Только Y-поворот — модель стоит вертикально, не наклоняется по surface normal
+    const euler = new THREE.Euler().setFromRotationMatrix(arReticle.matrix, 'YXZ');
+    arPlacedModel.rotation.set(0, euler.y, 0);
 
     arModelPlaced = true;
     console.log('[AR] Model placed at', arPlacedModel.position);
