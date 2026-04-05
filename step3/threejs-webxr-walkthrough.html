@@ -927,7 +927,7 @@
     if (typeof clearWaypoints === 'function') clearWaypoints();
 
     gltfLoader.load(
-      './the_great_drawing_room.glb',
+      './art_gallery_tour.glb',
       (gltf) => {
         const model = gltf.scene;
 
@@ -978,7 +978,7 @@
         console.error('GLB load error:', error);
         document.getElementById('loading').classList.remove('active');
         document.getElementById('start-screen').classList.remove('hidden');
-        alert('Could not load the_great_drawing_room.glb.\nMake sure you are running a local server (not file://).\n\nRun: python3 -m http.server 8080\nThen open: http://localhost:8080');
+        alert('Could not load art_gallery_tour.glb.\nMake sure you are running a local server (not file://).\n\nRun: python3 -m http.server 8080\nThen open: http://localhost:8080');
       }
     );
   }
