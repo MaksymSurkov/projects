@@ -1307,50 +1307,54 @@
     presetWaypoints.length = 0;
     currentWpIndex = -1;
 
-    const center = bbox.getCenter(new THREE.Vector3());
     const size   = bbox.getSize(new THREE.Vector3());
     const rayTop = bbox.max.y + 1;
-    const fractions = [0.2, 0.5, 0.8];
 
-    // Try placing 3 waypoints along a given axis (useZ=true → along Z, false → along X).
-    // For each fraction, search at the center line and several perpendicular offsets
-    // until a floor hit is found.
-    function tryAxis(useZ) {
-      const perpSize = size[useZ ? 'x' : 'z'];
-      const perpOffsets = [0, -perpSize * 0.15, perpSize * 0.15,
-                              -perpSize * 0.3,  perpSize * 0.3];
-      const pts = [];
-      for (const frac of fractions) {
-        let found = null;
-        for (const off of perpOffsets) {
-          const tx = useZ ? center.x + off : bbox.min.x + size.x * frac;
-          const tz = useZ ? bbox.min.z + size.z * frac : center.z + off;
-          const y  = findFloorY(model, tx, tz, rayTop);
-          if (y !== null) { found = new THREE.Vector3(tx, y, tz); break; }
-        }
-        if (found) pts.push(found);
+    // Step 1: collect all floor hit points on a coarse grid
+    const step = Math.max(1.0, Math.min(size.x, size.z) / 8);
+    const floorPts = [];
+    const xSteps = Math.ceil(size.x / step) + 1;
+    const zSteps = Math.ceil(size.z / step) + 1;
+
+    // Also collect Y values to find true floor (lowest 10th percentile)
+    const allY = [];
+    for (let xi = 0; xi < xSteps; xi++) {
+      for (let zi = 0; zi < zSteps; zi++) {
+        const x = bbox.min.x + xi * step;
+        const z = bbox.min.z + zi * step;
+        const y = findFloorY(model, x, z, rayTop);
+        if (y !== null) { floorPts.push(new THREE.Vector3(x, y, z)); allY.push(y); }
       }
-      return pts;
+    }
+    if (floorPts.length < 3) return;
+
+    // Keep only points near the true floor (filter out tables, ledges, etc.)
+    allY.sort((a, b) => a - b);
+    const floorY = allY[Math.floor(allY.length * 0.1)];
+    const tolerance = Math.max(0.4, size.y * 0.08);
+    const groundPts = floorPts.filter(p => Math.abs(p.y - floorY) <= tolerance);
+    if (groundPts.length < 3) return;
+
+    // Step 2: find the two floor points farthest apart — these are the two ends
+    // Pass 1: start from an arbitrary point, find farthest
+    let ptA = groundPts[0];
+    for (const p of groundPts) {
+      if (p.distanceTo(ptA) > ptA.distanceTo(groundPts[0])) ptA = p;
+    }
+    // Pass 2: find the point farthest from ptA → ptC (opposite end)
+    let ptC = groundPts[0];
+    for (const p of groundPts) {
+      if (p.distanceTo(ptA) > ptC.distanceTo(ptA)) ptC = p;
     }
 
-    const ptsZ = tryAxis(true);
-    const ptsX = tryAxis(false);
-
-    // Spread = distance from first to last waypoint along the chosen axis
-    const spreadOf = (pts, axis) =>
-      pts.length >= 2 ? Math.abs(pts[pts.length - 1][axis] - pts[0][axis]) : 0;
-
-    let chosen;
-    if (ptsZ.length !== ptsX.length) {
-      chosen = ptsZ.length > ptsX.length ? ptsZ : ptsX;
-    } else {
-      // Same hit count — pick the axis where waypoints are more spread out
-      const sZ = spreadOf(ptsZ, 'z');
-      const sX = spreadOf(ptsX, 'x');
-      chosen = sZ >= sX ? ptsZ : ptsX;
+    // Step 3: find floor point closest to the midpoint of ptA–ptC → ptB (center)
+    const mid = ptA.clone().add(ptC).multiplyScalar(0.5);
+    let ptB = groundPts[0];
+    for (const p of groundPts) {
+      if (p.distanceTo(mid) < ptB.distanceTo(mid)) ptB = p;
     }
 
-    for (const pos of chosen) {
+    for (const pos of [ptA, ptB, ptC]) {
       const marker = createPresetMarker();
       marker.position.copy(pos);
       marker.position.y += 0.015;
