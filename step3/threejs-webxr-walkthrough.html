@@ -1379,20 +1379,20 @@
       if (d > maxD2) { maxD2 = d; ptC = p; }
     }
 
-    // Step 3: find floor point closest to the midpoint of ptA–ptC → ptB (center)
-    const mid = ptA.clone().add(ptC).multiplyScalar(0.5);
-    let ptB = pts[0];
-    for (const p of pts) {
-      if (p.distanceTo(mid) < ptB.distanceTo(mid)) ptB = p;
+    // Step 3: find floor points nearest to 1/3 and 2/3 along ptA→ptC
+    function nearestPt(target) {
+      let best = pts[0];
+      for (const p of pts) {
+        if (p.distanceTo(target) < best.distanceTo(target)) best = p;
+      }
+      return best;
     }
+    const t1 = ptA.clone().lerp(ptC, 1/3);
+    const t2 = ptA.clone().lerp(ptC, 2/3);
+    const ptB = nearestPt(t1);
+    const ptD = nearestPt(t2);
 
-    console.log('[WP] groundPts count:', groundPts.length, 'floorY:', floorY.toFixed(2));
-    console.log('[WP] ptA:', ptA.x.toFixed(2), ptA.y.toFixed(2), ptA.z.toFixed(2));
-    console.log('[WP] ptB:', ptB.x.toFixed(2), ptB.y.toFixed(2), ptB.z.toFixed(2));
-    console.log('[WP] ptC:', ptC.x.toFixed(2), ptC.y.toFixed(2), ptC.z.toFixed(2));
-    console.log('[WP] bbox size:', size.x.toFixed(2), 'x', size.z.toFixed(2));
-
-    for (const pos of [ptA, ptB, ptC]) {
+    for (const pos of [ptA, ptB, ptD, ptC]) {
       const marker = createPresetMarker();
       marker.position.copy(pos);
       marker.position.y += 0.015;
@@ -1561,8 +1561,35 @@
       });
     }
 
-    const dir = e.deltaY > 0 ? 1 : -1;
-    currentWpIndex = (currentWpIndex + dir + presetWaypoints.length) % presetWaypoints.length;
+    const scrollDir = e.deltaY > 0 ? 1 : -1; // 1 = вперёд, -1 = назад
+
+    // Горизонтальное направление взгляда камеры
+    const camFwd = new THREE.Vector3();
+    camera.getWorldDirection(camFwd);
+    camFwd.y = 0;
+    camFwd.normalize();
+
+    // Ищем ближайший вейпоинт в направлении скролла
+    let bestIdx = -1;
+    let bestScore = -Infinity;
+    presetWaypoints.forEach((wp, i) => {
+      const toWp = new THREE.Vector3(
+        wp.position.x - camera.position.x,
+        0,
+        wp.position.z - camera.position.z
+      );
+      const dist = toWp.length();
+      if (dist < 0.5) return; // стоим на этой точке — пропускаем
+      toWp.normalize();
+      const alignment = toWp.dot(camFwd) * scrollDir; // > 0 если точка в нужном направлении
+      if (alignment > 0.2) { // минимальный угол ~78°
+        const score = alignment / dist; // предпочитаем ближние точки по курсу
+        if (score > bestScore) { bestScore = score; bestIdx = i; }
+      }
+    });
+
+    if (bestIdx === -1) return; // нет точек в этом направлении
+    currentWpIndex = bestIdx;
     flyTo(presetWaypoints[currentWpIndex].position);
   }, { passive: false });
 
