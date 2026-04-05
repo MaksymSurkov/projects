@@ -1357,6 +1357,12 @@
       if (p.distanceTo(mid) < ptB.distanceTo(mid)) ptB = p;
     }
 
+    console.log('[WP] groundPts count:', groundPts.length, 'floorY:', floorY.toFixed(2));
+    console.log('[WP] ptA:', ptA.x.toFixed(2), ptA.y.toFixed(2), ptA.z.toFixed(2));
+    console.log('[WP] ptB:', ptB.x.toFixed(2), ptB.y.toFixed(2), ptB.z.toFixed(2));
+    console.log('[WP] ptC:', ptC.x.toFixed(2), ptC.y.toFixed(2), ptC.z.toFixed(2));
+    console.log('[WP] bbox size:', size.x.toFixed(2), 'x', size.z.toFixed(2));
+
     for (const pos of [ptA, ptB, ptC]) {
       const marker = createPresetMarker();
       marker.position.copy(pos);
