@@ -1285,105 +1285,78 @@
     return group;
   }
 
+  // Find the floor Y by casting a downward ray at a given XZ position.
+  // Returns the Y of the lowest upward-facing surface hit, or null.
+  function findFloorY(model, x, z, rayOriginY) {
+    const ray = new THREE.Raycaster();
+    ray.set(new THREE.Vector3(x, rayOriginY, z), new THREE.Vector3(0, -1, 0));
+    const hits = ray.intersectObject(model, true);
+    let best = null;
+    for (const hit of hits) {
+      if (!hit.face) continue;
+      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+      if (wn.y > 0.5) {
+        if (best === null || hit.point.y < best) best = hit.point.y;
+      }
+    }
+    return best;
+  }
+
   function autoGenerateWaypoints(model, bbox) {
     presetWaypoints.forEach(wp => scene.remove(wp.marker));
     presetWaypoints.length = 0;
     currentWpIndex = -1;
 
-    const size = bbox.getSize(new THREE.Vector3());
-    const step = Math.max(0.8, Math.min(size.x, size.z) / 5);
-    const downRay = new THREE.Raycaster();
+    const center = bbox.getCenter(new THREE.Vector3());
+    const size   = bbox.getSize(new THREE.Vector3());
+    const rayTop = bbox.max.y + 1;
 
-    // Pass 1: find the true floor Y — the most common/lowest upward-facing surface
-    // Cast a dense grid of rays and collect all lowest-y hits per column
-    const floorYSamples = [];
-    const sampleStep = step * 0.5;
-    const sxCount = Math.ceil(size.x / sampleStep) + 1;
-    const szCount = Math.ceil(size.z / sampleStep) + 1;
+    // Determine the longer horizontal axis — place 3 waypoints along it
+    const useZ = size.z >= size.x; // true → axis is Z, false → axis is X
+    // Fractions along the long axis: near one end, center, near other end
+    const fractions = [0.2, 0.5, 0.8];
 
-    for (let xi = 0; xi < sxCount; xi++) {
-      for (let zi = 0; zi < szCount; zi++) {
-        const x = bbox.min.x + xi * sampleStep;
-        const z = bbox.min.z + zi * sampleStep;
-        downRay.set(new THREE.Vector3(x, bbox.max.y + 1, z), new THREE.Vector3(0, -1, 0));
-        const hits = downRay.intersectObject(model, true);
-        let lowestY = null;
-        for (const hit of hits) {
-          if (!hit.face) continue;
-          const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-          if (wn.y > 0.5) {
-            if (lowestY === null || hit.point.y < lowestY) lowestY = hit.point.y;
-          }
-        }
-        if (lowestY !== null) floorYSamples.push(lowestY);
+    // Search radius: try multiple offsets perpendicular to the main axis
+    // to find a hit even if the exact center-line has a gap (wall/pillar)
+    const perpOffsets = [0, -size[useZ ? 'x' : 'z'] * 0.15, size[useZ ? 'x' : 'z'] * 0.15];
+
+    for (const frac of fractions) {
+      let floorY = null;
+      let hitX = center.x, hitZ = center.z;
+
+      for (const perp of perpOffsets) {
+        const tx = useZ ? center.x + perp : bbox.min.x + size.x * frac;
+        const tz = useZ ? bbox.min.z + size.z * frac : center.z + perp;
+        const y = findFloorY(model, tx, tz, rayTop);
+        if (y !== null) { floorY = y; hitX = tx; hitZ = tz; break; }
       }
-    }
 
-    if (floorYSamples.length === 0) return;
+      if (floorY === null) continue; // no floor found at this fraction
 
-    // Floor Y = median of lowest samples (robust against outliers)
-    floorYSamples.sort((a, b) => a - b);
-    const floorY = floorYSamples[Math.floor(floorYSamples.length * 0.1)]; // 10th percentile = true floor
-    const floorTolerance = Math.max(0.3, size.y * 0.08); // allow slight variation
-
-    // Pass 2: place waypoints only on surfaces near floorY
-    const placed = [];
-    const xCount = Math.ceil(size.x / step) + 1;
-    const zCount = Math.ceil(size.z / step) + 1;
-
-    for (let xi = 0; xi < xCount; xi++) {
-      for (let zi = 0; zi < zCount; zi++) {
-        const x = bbox.min.x + xi * step;
-        const z = bbox.min.z + zi * step;
-        downRay.set(new THREE.Vector3(x, bbox.max.y + 1, z), new THREE.Vector3(0, -1, 0));
-        const hits = downRay.intersectObject(model, true);
-
-        let bestHit = null;
-        for (const hit of hits) {
-          if (!hit.face) continue;
-          const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-          // Must be upward-facing AND near floor level
-          if (wn.y > 0.5 && Math.abs(hit.point.y - floorY) <= floorTolerance) {
-            if (!bestHit || hit.point.y < bestHit.point.y) bestHit = hit;
-          }
-        }
-
-        if (bestHit) {
-          const pos = bestHit.point.clone();
-
-          if (!placed.some(p => p.distanceTo(pos) < step * 0.75)) {
-            placed.push(pos);
-            const marker = createPresetMarker();
-            marker.position.copy(pos);
-            marker.position.y += 0.015;
-            scene.add(marker);
-            presetWaypoints.push({ position: pos.clone(), marker });
-          }
-        }
-      }
+      const pos = new THREE.Vector3(hitX, floorY, hitZ);
+      const marker = createPresetMarker();
+      marker.position.copy(pos);
+      marker.position.y += 0.015;
+      scene.add(marker);
+      presetWaypoints.push({ position: pos.clone(), marker });
     }
   }
 
   function startInsideRoom() {
     if (presetWaypoints.length === 0) return;
 
-    // Find centroid of all waypoints, then pick the one closest to it
-    const centroid = new THREE.Vector3();
-    presetWaypoints.forEach(wp => centroid.add(wp.position));
-    centroid.divideScalar(presetWaypoints.length);
+    // Start at the middle waypoint (index 1), look toward the far end (index 2 or 0)
+    const midIdx = Math.floor(presetWaypoints.length / 2);
+    currentWpIndex = midIdx;
+    const p = presetWaypoints[midIdx].position;
 
-    let best = presetWaypoints[0];
-    let minDist = Infinity;
-    presetWaypoints.forEach(wp => {
-      const d = wp.position.distanceTo(centroid);
-      if (d < minDist) { minDist = d; best = wp; }
-    });
-    currentWpIndex = presetWaypoints.indexOf(best);
-
-    const p = best.position;
     camera.position.set(p.x, p.y + PLAYER_HEIGHT, p.z);
-    // Look toward centroid (or forward if already at centroid)
-    const fwd = new THREE.Vector3(centroid.x - p.x, 0, centroid.z - p.z).normalize();
+
+    // Look toward another waypoint for a meaningful initial view direction
+    const lookTarget = presetWaypoints.length > 1
+      ? presetWaypoints[midIdx + 1 < presetWaypoints.length ? midIdx + 1 : midIdx - 1].position
+      : new THREE.Vector3(p.x + 1, p.y, p.z);
+    const fwd = new THREE.Vector3(lookTarget.x - p.x, 0, lookTarget.z - p.z).normalize();
     if (fwd.length() < 0.01) fwd.set(0, 0, -1);
     orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
     orbitControls.update();
