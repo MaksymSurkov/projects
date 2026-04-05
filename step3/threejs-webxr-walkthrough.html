@@ -537,16 +537,7 @@
   // ============================================
   renderer.xr.enabled = true;
 
-  // В AR нужен прозрачный фон чтобы камера просвечивала через сцену
-  renderer.xr.addEventListener('sessionstart', () => {
-    const session = renderer.xr.getSession();
-    if (session && session.environmentBlendMode !== 'opaque') {
-      renderer.setClearColor(0x000000, 0);
-    }
-  });
-  renderer.xr.addEventListener('sessionend', () => {
-    renderer.setClearColor(0x0d0d14, 1);
-  });
+  // XR session handlers are consolidated below after AR variables are declared
 
   document.body.appendChild(renderer.domElement);
 
@@ -704,6 +695,7 @@
     })
   );
   arReticle.matrixAutoUpdate = false;
+  arReticle.renderOrder = 999;
   arReticle.visible = false;
   scene.add(arReticle);
 
@@ -722,18 +714,6 @@
 
   controller0.addEventListener('select', onSelect);
   controller1.addEventListener('select', onSelect);
-
-  // В AR на мобильном тапы приходят как transient input sources —
-  // они могут не попасть на controller0/1, поэтому слушаем сессию напрямую
-  renderer.xr.addEventListener('sessionstart', () => {
-    const session = renderer.xr.getSession();
-    if (!session) return;
-    console.log('[AR] Session started, environmentBlendMode:', session.environmentBlendMode);
-    session.addEventListener('select', (e) => {
-      console.log('[AR] session.select fired, arReticle.visible =', arReticle.visible, 'hitTestSource =', hitTestSource);
-      if (arReticle.visible) onARSelect();
-    });
-  });
 
   function onARSelect() {
     if (!arReticle.visible) return;
@@ -1047,30 +1027,56 @@
   });
 
   // ============================================
-  // WebXR SESSION EVENTS
-  // Когда входим/выходим из VR или AR
+  // WebXR SESSION EVENTS — single consolidated handler
   // ============================================
   renderer.xr.addEventListener('sessionstart', () => {
-    // Скрываем обычный UI в XR
+    const session = renderer.xr.getSession();
+    if (!session) return;
+
+    // Transparent background for AR camera feed
+    if (session.environmentBlendMode !== 'opaque') {
+      renderer.setClearColor(0x000000, 0);
+    }
+
+    // Hide UI
     document.getElementById('controls-panel').style.display = 'none';
     document.getElementById('hud-top').style.opacity = '0';
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = 'block';
 
-    // Убираем туман в AR (мешает видеть реальный мир)
+    // Scene adjustments
     if (scene.fog) scene.fog.density = 0;
     grid.visible = false;
     shadowFloor.visible = false;
-
-    // Делаем свет ярче для AR (чтобы модель была видна на фоне камеры)
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
-
-    // Скрываем основную модель в AR — она появится как клон при тапе
     if (currentModel) currentModel.visible = false;
+
+    // Tap handler — works for both transient (mobile screen tap) and controller
+    session.addEventListener('select', () => {
+      if (arReticle.visible) onARSelect();
+    });
+
+    // Request hit-test source immediately at session start (most reliable timing)
+    session.requestReferenceSpace('viewer').then((viewerSpace) => {
+      session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+        hitTestSource = source;
+      }).catch((err) => {
+        console.warn('[AR] requestHitTestSource failed:', err.message);
+      });
+    }).catch((err) => {
+      console.warn('[AR] requestReferenceSpace(viewer) failed:', err.message);
+    });
+
+    session.addEventListener('end', () => {
+      hitTestSource = null;
+      hitTestSourceRequested = false;
+    });
   });
 
   renderer.xr.addEventListener('sessionend', () => {
+    renderer.setClearColor(0x0d0d14, 1);
+
     document.getElementById('controls-panel').style.display = 'flex';
     document.getElementById('hud-top').style.opacity = '1';
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
@@ -1079,23 +1085,17 @@
     scene.fog.density = 0.03;
     grid.visible = true;
     shadowFloor.visible = true;
-    renderer.setClearColor(0x0d0d14);
-
-    // Восстанавливаем свет
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
 
-    // Показываем основную модель обратно
     if (currentModel) currentModel.visible = true;
 
-    // Убираем AR-клон
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
       arPlacedModel = null;
       arModelPlaced = false;
     }
 
-    // Сбрасываем AR hit-test (на случай если session.end внутри блока не сработал)
     hitTestSource = null;
     hitTestSourceRequested = false;
     arReticle.visible = false;
@@ -1170,43 +1170,18 @@
       }
     }
 
-    // AR hit-test
-    if (frame) {
-      const session = renderer.xr.getSession();
-
-      if (session && !hitTestSourceRequested) {
-        hitTestSourceRequested = true;
-
-        session.requestReferenceSpace('viewer').then((viewerSpace) => {
-          session.requestHitTestSource({ space: viewerSpace }).then((source) => {
-            hitTestSource = source;
-          }).catch((err) => {
-            // Reset flag so next frame retries (e.g. session not ready yet)
-            hitTestSourceRequested = false;
-          });
-        }).catch((err) => {
-          hitTestSourceRequested = false;
-        });
-
-        session.addEventListener('end', () => {
-          hitTestSourceRequested = false;
-          hitTestSource = null;
-        });
-      }
-
-      if (hitTestSource) {
-        const referenceSpace = renderer.xr.getReferenceSpace();
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0) {
-          const hit = hitTestResults[0];
-          const pose = hit.getPose(referenceSpace);
-          if (pose) {
-            arReticle.visible = true;
-            arReticle.matrix.fromArray(pose.transform.matrix);
-          }
-        } else {
-          arReticle.visible = false;
+    // AR hit-test — use source requested at sessionstart
+    if (frame && hitTestSource) {
+      const referenceSpace = renderer.xr.getReferenceSpace();
+      const hitTestResults = frame.getHitTestResults(hitTestSource);
+      if (hitTestResults.length > 0) {
+        const pose = hitTestResults[0].getPose(referenceSpace);
+        if (pose) {
+          arReticle.visible = true;
+          arReticle.matrix.fromArray(pose.transform.matrix);
         }
+      } else {
+        arReticle.visible = false;
       }
     }
 
