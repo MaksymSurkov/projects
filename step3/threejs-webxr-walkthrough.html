@@ -414,6 +414,25 @@
 <div id="mode-indicator">Orbit Mode</div>
 <div id="position-display"></div>
 <div id="xr-status">Checking WebXR...</div>
+<div id="ar-hint" style="
+  display:none;
+  position:fixed;
+  bottom:30%;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:30;
+  color:white;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  text-align:center;
+  background:rgba(0,0,0,0.5);
+  padding:10px 20px;
+  border:1px solid rgba(255,255,255,0.2);
+  pointer-events:none;
+  white-space:nowrap;
+">Move phone to scan floor · Tap to place</div>
 
 <div id="controls-panel">
   <button class="btn active" onclick="setOrbitMode()">Orbit</button>
@@ -770,6 +789,7 @@
     arPlacedModel.rotation.set(0, euler.y, 0);
 
     arModelPlaced = true;
+    document.getElementById('ar-hint').style.display = 'none';
     console.log('[AR] Model placed at', arPlacedModel.position);
   }
 
@@ -1035,6 +1055,7 @@
     document.getElementById('controls-panel').style.display = 'none';
     document.getElementById('hud-top').style.opacity = '0';
     document.getElementById('mode-indicator').textContent = 'XR Mode';
+    document.getElementById('ar-hint').style.display = 'block';
 
     // Убираем туман в AR (мешает видеть реальный мир)
     if (scene.fog) scene.fog.density = 0;
@@ -1053,6 +1074,7 @@
     document.getElementById('controls-panel').style.display = 'flex';
     document.getElementById('hud-top').style.opacity = '1';
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
+    document.getElementById('ar-hint').style.display = 'none';
 
     scene.fog.density = 0.03;
     grid.visible = true;
@@ -1153,33 +1175,24 @@
       const session = renderer.xr.getSession();
 
       if (session && !hitTestSourceRequested) {
-        // Проверяем что это AR-сессия (не VR).
-        // 'alpha-blend' — AR на телефоне (Android Chrome)
-        // 'additive' — AR на HoloLens / Magic Leap
-        // 'opaque' — VR (нет сквозного вида)
-        const isAR = session.environmentBlendMode === 'alpha-blend' ||
-                     session.environmentBlendMode === 'additive';
+        // Always try to request hit-test — works for AR, fails silently for VR
+        hitTestSourceRequested = true;
 
-        if (isAR) {
-          console.log('[AR] Requesting hit test source...');
-          session.requestReferenceSpace('viewer').then((viewerSpace) => {
-            session.requestHitTestSource({ space: viewerSpace }).then((source) => {
-              hitTestSource = source;
-              console.log('[AR] Hit test source ready');
-            }).catch((err) => {
-              console.warn('[AR] Hit test not available:', err);
-            });
+        session.requestReferenceSpace('viewer').then((viewerSpace) => {
+          session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+            hitTestSource = source;
+            console.log('[AR] Hit test ready, blendMode:', session.environmentBlendMode);
           }).catch((err) => {
-            console.warn('[AR] Viewer reference space not available:', err);
+            console.log('[AR] Hit test not supported (VR session or no permission):', err.message);
           });
+        }).catch((err) => {
+          console.log('[AR] Viewer space not available:', err.message);
+        });
 
-          hitTestSourceRequested = true;
-
-          session.addEventListener('end', () => {
-            hitTestSourceRequested = false;
-            hitTestSource = null;
-          });
-        }
+        session.addEventListener('end', () => {
+          hitTestSourceRequested = false;
+          hitTestSource = null;
+        });
       }
 
       if (hitTestSource) {
