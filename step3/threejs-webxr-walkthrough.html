@@ -1404,16 +1404,15 @@
   function startInsideRoom() {
     if (presetWaypoints.length === 0) return;
 
-    // Start at the middle waypoint (index 1), look toward the far end (index 2 or 0)
-    const midIdx = Math.floor(presetWaypoints.length / 2);
-    currentWpIndex = midIdx;
-    const p = presetWaypoints[midIdx].position;
+    // Start at the first waypoint (one end of the room), look toward next
+    currentWpIndex = 0;
+    const p = presetWaypoints[0].position;
 
     camera.position.set(p.x, p.y + PLAYER_HEIGHT, p.z);
 
-    // Look toward another waypoint for a meaningful initial view direction
+    // Look toward the next waypoint
     const lookTarget = presetWaypoints.length > 1
-      ? presetWaypoints[midIdx + 1 < presetWaypoints.length ? midIdx + 1 : midIdx - 1].position
+      ? presetWaypoints[1].position
       : new THREE.Vector3(p.x + 1, p.y, p.z);
     const fwd = new THREE.Vector3(lookTarget.x - p.x, 0, lookTarget.z - p.z).normalize();
     if (fwd.length() < 0.01) fwd.set(0, 0, -1);
@@ -1549,9 +1548,9 @@
   renderer.domElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
-    if (scrollThrottle) return;
+    if (scrollThrottle || navAnimating) return; // ждём пока закончится предыдущий перелёт
     scrollThrottle = true;
-    setTimeout(() => { scrollThrottle = false; }, 600);
+    setTimeout(() => { scrollThrottle = false; }, 800);
 
     // Find nearest waypoint to camera as starting reference
     if (currentWpIndex === -1) {
