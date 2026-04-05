@@ -1308,20 +1308,24 @@
         );
 
         const hits = downRay.intersectObject(model, true);
+        // Collect all floor candidates (upward normal), pick the lowest y = actual floor
+        let floorHit = null;
         for (const hit of hits) {
           if (!hit.face) continue;
           const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
           if (wn.y > 0.5) {
-            const pos = hit.point.clone();
-            // Skip if too close to an existing point
-            if (placed.some(p => p.distanceTo(pos) < step * 0.75)) break;
+            if (!floorHit || hit.point.y < floorHit.point.y) floorHit = hit;
+          }
+        }
+        if (floorHit) {
+          const pos = floorHit.point.clone();
+          if (!placed.some(p => p.distanceTo(pos) < step * 0.75)) {
             placed.push(pos);
             const marker = createPresetMarker();
             marker.position.copy(pos);
             marker.position.y += 0.015;
             scene.add(marker);
             presetWaypoints.push({ position: pos.clone(), marker });
-            break;
           }
         }
       }
