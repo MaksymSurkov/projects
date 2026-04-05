@@ -782,6 +782,7 @@
   orbitControls.autoRotate = false;
   orbitControls.minDistance = 0.3;
   orbitControls.maxDistance = 50;
+  orbitControls.enableZoom = false; // scroll is used for waypoint navigation
 
   const fpsControls = new PointerLockControls(camera, document.body);
 
@@ -894,6 +895,8 @@
         orbitControls.target.set(0, scaledSize.y * 0.4, 0);
         orbitControls.update();
 
+        autoGenerateWaypoints(model, scaledBox);
+
         document.getElementById('loading').classList.remove('active');
         document.getElementById('position-display').style.display = 'block';
         URL.revokeObjectURL(url);
@@ -959,6 +962,8 @@
         camera.position.set(0, PLAYER_HEIGHT, scaledSize.z * 0.2);
         orbitControls.target.set(0, scaledSize.y * 0.4, 0);
         orbitControls.update();
+
+        autoGenerateWaypoints(model, scaledBox);
 
         document.getElementById('loading').classList.remove('active');
         document.getElementById('position-display').style.display = 'block';
@@ -1048,6 +1053,7 @@
     dirLight.intensity = 3.0;
     if (currentModel) currentModel.visible = false;
     navReticle.visible = false;
+    presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
     // Tap handler — works for both transient (mobile screen tap) and controller
     session.addEventListener('select', () => {
@@ -1086,6 +1092,7 @@
     dirLight.intensity = 1.3;
 
     if (currentModel) currentModel.visible = true;
+    presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
@@ -1169,7 +1176,7 @@
 
     // Floor navigation fly animation
     if (navAnimating) {
-      navAnimProgress = Math.min(navAnimProgress + delta * 1.5, 1);
+      navAnimProgress = Math.min(navAnimProgress + delta * 1.8, 1);
       const t = navAnimProgress < 0.5
         ? 4 * navAnimProgress ** 3
         : 1 - Math.pow(-2 * navAnimProgress + 2, 3) / 2;
@@ -1179,10 +1186,20 @@
       if (navAnimProgress >= 1) navAnimating = false;
     }
 
-    // Nav reticle pulse
+    // Cursor reticle pulse
     if (navReticle.visible) {
       const pulse = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 4);
       navRing.material.opacity = pulse * 0.85;
+    }
+
+    // Preset waypoints slow pulse (only non-hovered ones)
+    if (presetWaypoints.length > 0) {
+      const slowPulse = 0.15 + 0.1 * Math.sin(clock.elapsedTime * 1.5);
+      presetWaypoints.forEach(wp => {
+        if (wp === hoveredWaypoint) return;
+        wp.marker.children[0].material.opacity = slowPulse * 1.8;
+        wp.marker.children[1].material.opacity = slowPulse * 2;
+      });
     }
 
     // AR hit-test — use source requested at sessionstart
@@ -1212,97 +1229,109 @@
   });
 
   // ============================================
-  // MATTERPORT-STYLE FLOOR NAVIGATION
-  // Circle follows cursor on floor, click → fly there
+  // MATTERPORT-STYLE NAVIGATION
+  // - Predefined waypoints auto-placed on floor
+  // - Cursor reticle follows floor on hover
+  // - Click anywhere on floor → fly there
+  // - Hover waypoint → highlight; click waypoint → fly there
+  // - Scroll → move between waypoints sequentially
   // ============================================
+
   let navAnimating = false;
   let navAnimProgress = 0;
   const navAnimFrom = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
   const navAnimTo   = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
   let navHitPoint = null;
+  let hoveredWaypoint = null;
 
-  // Floor reticle — ring + inner dot
+  // --- Cursor reticle (follows mouse on floor) ---
   const navReticle = new THREE.Group();
-
   const navRing = new THREE.Mesh(
     new THREE.RingGeometry(0.18, 0.26, 32).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthTest: false, side: THREE.DoubleSide })
   );
   navRing.renderOrder = 20;
   navReticle.add(navRing);
-
   const navDot = new THREE.Mesh(
     new THREE.CircleGeometry(0.05, 16).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthTest: false })
   );
   navDot.renderOrder = 20;
   navReticle.add(navDot);
-
   navReticle.visible = false;
   scene.add(navReticle);
 
-  // Raycaster for floor detection
-  const navRaycaster = new THREE.Raycaster();
-  const navMouse = new THREE.Vector2();
+  // --- Preset waypoints ---
+  const presetWaypoints = [];
+  let currentWpIndex = -1;
 
-  renderer.domElement.addEventListener('mousemove', (e) => {
-    if (renderer.xr.isPresenting || !currentModel || currentMode === 'fps') {
-      navReticle.visible = false;
-      navHitPoint = null;
-      return;
-    }
+  function createPresetMarker() {
+    const group = new THREE.Group();
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.22, 0.32, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, depthTest: false, side: THREE.DoubleSide })
+    );
+    ring.renderOrder = 15;
+    group.add(ring);
+    const dot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.07, 16).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthTest: false })
+    );
+    dot.renderOrder = 15;
+    group.add(dot);
+    group.userData.isPresetWaypoint = true;
+    return group;
+  }
 
-    navMouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
-    navMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    navRaycaster.setFromCamera(navMouse, camera);
+  function autoGenerateWaypoints(model, bbox) {
+    presetWaypoints.forEach(wp => scene.remove(wp.marker));
+    presetWaypoints.length = 0;
+    currentWpIndex = -1;
 
-    const hits = navRaycaster.intersectObject(currentModel, true);
-    navHitPoint = null;
-    navReticle.visible = false;
+    const size = bbox.getSize(new THREE.Vector3());
+    // Step: aim for ~5-8 points along shortest axis
+    const step = Math.max(0.8, Math.min(size.x, size.z) / 5);
+    const downRay = new THREE.Raycaster();
+    const placed = [];
 
-    for (const hit of hits) {
-      if (!hit.face) continue;
-      // World-space normal — check it points up (floor surface)
-      const worldNormal = hit.face.normal.clone()
-        .transformDirection(hit.object.matrixWorld);
-      if (worldNormal.y > 0.5) {
-        navHitPoint = hit.point.clone();
-        navReticle.position.copy(navHitPoint);
-        navReticle.position.y += 0.01;
-        navReticle.visible = true;
-        break;
+    const xCount = Math.ceil(size.x / step) + 1;
+    const zCount = Math.ceil(size.z / step) + 1;
+
+    for (let xi = 0; xi < xCount; xi++) {
+      for (let zi = 0; zi < zCount; zi++) {
+        const x = bbox.min.x + xi * step;
+        const z = bbox.min.z + zi * step;
+
+        downRay.set(
+          new THREE.Vector3(x, bbox.max.y + 1, z),
+          new THREE.Vector3(0, -1, 0)
+        );
+
+        const hits = downRay.intersectObject(model, true);
+        for (const hit of hits) {
+          if (!hit.face) continue;
+          const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+          if (wn.y > 0.5) {
+            const pos = hit.point.clone();
+            // Skip if too close to an existing point
+            if (placed.some(p => p.distanceTo(pos) < step * 0.75)) break;
+            placed.push(pos);
+            const marker = createPresetMarker();
+            marker.position.copy(pos);
+            marker.position.y += 0.015;
+            scene.add(marker);
+            presetWaypoints.push({ position: pos.clone(), marker });
+            break;
+          }
+        }
       }
     }
-  });
+  }
 
-  renderer.domElement.addEventListener('mouseleave', () => {
-    navReticle.visible = false;
-    navHitPoint = null;
-  });
-
-  let navMouseDownX = 0, navMouseDownY = 0;
-  renderer.domElement.addEventListener('mousedown', (e) => {
-    navMouseDownX = e.clientX;
-    navMouseDownY = e.clientY;
-  });
-
-  renderer.domElement.addEventListener('click', (e) => {
-    if (renderer.xr.isPresenting || !navHitPoint) return;
-    if (currentMode === 'fps' && fpsControls.isLocked) return;
-
-    // Ignore if mouse moved more than 5px — it was a drag, not a click
-    const dx = e.clientX - navMouseDownX;
-    const dy = e.clientY - navMouseDownY;
-    if (Math.sqrt(dx * dx + dy * dy) > 5) return;
-
-    // Target camera position: floor hit point + eye height
-    const destCam = new THREE.Vector3(navHitPoint.x, navHitPoint.y + PLAYER_HEIGHT, navHitPoint.z);
-
-    // Maintain current look direction & distance
-    const lookDir = new THREE.Vector3()
-      .subVectors(orbitControls.target, camera.position)
-      .normalize();
-    const lookDist = camera.position.distanceTo(orbitControls.target);
+  function flyTo(destFloorPoint) {
+    const destCam = new THREE.Vector3(destFloorPoint.x, destFloorPoint.y + PLAYER_HEIGHT, destFloorPoint.z);
+    const lookDir = new THREE.Vector3().subVectors(orbitControls.target, camera.position).normalize();
+    const lookDist = Math.max(1.5, camera.position.distanceTo(orbitControls.target));
     const destTarget = destCam.clone().add(lookDir.multiplyScalar(lookDist));
 
     navAnimFrom.cam.copy(camera.position);
@@ -1312,9 +1341,137 @@
     navAnimProgress = 0;
     navAnimating = true;
 
-    // Switch to orbit if in walk mode
     if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
+  }
+
+  // --- Raycaster ---
+  const navRaycaster = new THREE.Raycaster();
+  const navMouse = new THREE.Vector2();
+
+  renderer.domElement.addEventListener('mousemove', (e) => {
+    if (renderer.xr.isPresenting || !currentModel || currentMode === 'fps') {
+      navReticle.visible = false;
+      navHitPoint = null;
+      if (hoveredWaypoint) {
+        hoveredWaypoint.marker.children[0].material.opacity = 0.25;
+        hoveredWaypoint.marker.children[1].material.opacity = 0.3;
+        hoveredWaypoint = null;
+      }
+      renderer.domElement.style.cursor = 'default';
+      return;
+    }
+
+    navMouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    navMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    navRaycaster.setFromCamera(navMouse, camera);
+
+    // Check preset waypoint hover first
+    const wpMeshes = [];
+    presetWaypoints.forEach(wp => wp.marker.children.forEach(c => wpMeshes.push(c)));
+    const wpHits = navRaycaster.intersectObjects(wpMeshes);
+
+    // Unhover previous
+    if (hoveredWaypoint) {
+      hoveredWaypoint.marker.children[0].material.opacity = 0.25;
+      hoveredWaypoint.marker.children[1].material.opacity = 0.3;
+      hoveredWaypoint = null;
+    }
+
+    if (wpHits.length > 0) {
+      // Find which waypoint was hit
+      for (const wp of presetWaypoints) {
+        if (wp.marker.children.includes(wpHits[0].object)) {
+          hoveredWaypoint = wp;
+          wp.marker.children[0].material.opacity = 0.9;
+          wp.marker.children[1].material.opacity = 0.95;
+          break;
+        }
+      }
+      navReticle.visible = false;
+      navHitPoint = null;
+      renderer.domElement.style.cursor = 'pointer';
+      return;
+    }
+
+    // Floor hit
+    renderer.domElement.style.cursor = 'default';
+    const hits = navRaycaster.intersectObject(currentModel, true);
+    navHitPoint = null;
+    navReticle.visible = false;
+
+    for (const hit of hits) {
+      if (!hit.face) continue;
+      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+      if (wn.y > 0.5) {
+        navHitPoint = hit.point.clone();
+        navReticle.position.copy(navHitPoint);
+        navReticle.position.y += 0.01;
+        navReticle.visible = true;
+        renderer.domElement.style.cursor = 'pointer';
+        break;
+      }
+    }
   });
+
+  renderer.domElement.addEventListener('mouseleave', () => {
+    navReticle.visible = false;
+    navHitPoint = null;
+    if (hoveredWaypoint) {
+      hoveredWaypoint.marker.children[0].material.opacity = 0.25;
+      hoveredWaypoint.marker.children[1].material.opacity = 0.3;
+      hoveredWaypoint = null;
+    }
+    renderer.domElement.style.cursor = 'default';
+  });
+
+  // --- Click ---
+  let navMouseDownX = 0, navMouseDownY = 0;
+  renderer.domElement.addEventListener('mousedown', (e) => {
+    navMouseDownX = e.clientX;
+    navMouseDownY = e.clientY;
+  });
+
+  renderer.domElement.addEventListener('click', (e) => {
+    if (renderer.xr.isPresenting) return;
+    if (currentMode === 'fps' && fpsControls.isLocked) return;
+    const dx = e.clientX - navMouseDownX;
+    const dy = e.clientY - navMouseDownY;
+    if (Math.sqrt(dx * dx + dy * dy) > 5) return; // drag, not click
+
+    if (hoveredWaypoint) {
+      // Find index for scroll tracking
+      currentWpIndex = presetWaypoints.indexOf(hoveredWaypoint);
+      flyTo(hoveredWaypoint.position);
+      return;
+    }
+
+    if (navHitPoint) {
+      flyTo(navHitPoint);
+    }
+  });
+
+  // --- Scroll: navigate between preset waypoints ---
+  let scrollThrottle = false;
+  renderer.domElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
+    if (scrollThrottle) return;
+    scrollThrottle = true;
+    setTimeout(() => { scrollThrottle = false; }, 600);
+
+    // Find nearest waypoint to camera as starting reference
+    if (currentWpIndex === -1) {
+      let minDist = Infinity;
+      presetWaypoints.forEach((wp, i) => {
+        const d = camera.position.distanceTo(wp.position);
+        if (d < minDist) { minDist = d; currentWpIndex = i; }
+      });
+    }
+
+    const dir = e.deltaY > 0 ? 1 : -1;
+    currentWpIndex = (currentWpIndex + dir + presetWaypoints.length) % presetWaypoints.length;
+    flyTo(presetWaypoints[currentWpIndex].position);
+  }, { passive: false });
 
   // ============================================
   // UI
