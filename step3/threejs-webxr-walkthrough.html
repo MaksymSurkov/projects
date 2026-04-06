@@ -344,6 +344,88 @@
 
     canvas { display: block; }
 
+    /* ===== ADD HOTSPOT MODE ===== */
+    body.hotspot-mode { cursor: crosshair !important; }
+    body.hotspot-mode canvas { cursor: crosshair !important; }
+
+    /* Попап ввода названия */
+    #hotspot-popup {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+    }
+
+    #hotspot-popup-inner {
+      background: rgba(13,13,20,0.97);
+      border: 1px solid rgba(77,171,247,0.3);
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 280px;
+      backdrop-filter: blur(20px);
+    }
+
+    #hotspot-popup-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #4dabf7;
+    }
+
+    #hotspot-popup-input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    #hotspot-popup-input:focus { border-color: #4dabf7; }
+
+    #hotspot-popup-btns { display: flex; gap: 8px; }
+
+    #hotspot-popup-ok {
+      flex: 1;
+      background: rgba(77,171,247,0.15);
+      border: 1px solid rgba(77,171,247,0.4);
+      color: #4dabf7;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    #hotspot-popup-ok:hover { background: rgba(77,171,247,0.3); }
+
+    #hotspot-popup-cancel {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #555;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    #hotspot-popup-cancel:hover { border-color: #444; color: #888; }
+
+    .btn.hotspot-active {
+      background: rgba(77,171,247,0.2) !important;
+      border-color: #4dabf7 !important;
+      color: #4dabf7 !important;
+    }
+
     /* ===== INFO HOTSPOTS ===== */
     .info-hotspot {
       position: fixed;
@@ -465,9 +547,19 @@
 
 <div id="crosshair"></div>
 
-<!-- Info hotspots -->
-<div class="info-hotspot" id="hotspot-0" style="display:none">
-  <div class="info-hotspot-label">Dog</div>
+<!-- Info hotspots контейнер -->
+<div id="hotspots-container"></div>
+
+<!-- Попап для ввода названия хотспота -->
+<div id="hotspot-popup" style="display:none">
+  <div id="hotspot-popup-inner">
+    <div id="hotspot-popup-title">Название</div>
+    <input id="hotspot-popup-input" type="text" placeholder="Введите название..." autocomplete="off">
+    <div id="hotspot-popup-btns">
+      <button id="hotspot-popup-ok">Добавить</button>
+      <button id="hotspot-popup-cancel">Отмена</button>
+    </div>
+  </div>
 </div>
 <div id="mode-indicator">Orbit Mode</div>
 <div id="position-display"></div>
@@ -499,6 +591,7 @@
   <button class="btn" onclick="toggleWireframe()">Wireframe</button>
   <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
+  <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button>
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
@@ -1625,8 +1718,23 @@
     const dy = e.clientY - navMouseDownY;
     if (Math.sqrt(dx * dx + dy * dy) > 5) return; // drag, not click
 
+    // Режим расстановки хотспотов — клик по любой поверхности
+    if (hotspotMode) {
+      // Пересчитываем позицию мыши и делаем raycast по текущей позиции курсора
+      const mx = (e.clientX / window.innerWidth) * 2 - 1;
+      const my = -(e.clientY / window.innerHeight) * 2 + 1;
+      const hsRay = new THREE.Raycaster();
+      hsRay.setFromCamera(new THREE.Vector2(mx, my), camera);
+      if (currentModel) {
+        const hsHits = hsRay.intersectObject(currentModel, true);
+        if (hsHits.length > 0) {
+          openHotspotPopup(hsHits[0].point);
+        }
+      }
+      return;
+    }
+
     if (hoveredWaypoint) {
-      // Find index for scroll tracking
       currentWpIndex = presetWaypoints.indexOf(hoveredWaypoint);
       flyTo(hoveredWaypoint.position);
       return;
@@ -1678,12 +1786,22 @@
   // ============================================
   // INFO HOTSPOTS
   // ============================================
-  const infoHotspots = [
-    {
-      position: new THREE.Vector3(-0.7, 2.1, 0.4),
-      el: document.getElementById('hotspot-0')
-    }
-  ];
+  const infoHotspots = [];
+  const hotspotsContainer = document.getElementById('hotspots-container');
+
+  function createHotspotEl(label) {
+    const el = document.createElement('div');
+    el.className = 'info-hotspot';
+    el.style.display = 'none';
+    el.innerHTML = `<div class="info-hotspot-label">${label}</div>`;
+    hotspotsContainer.appendChild(el);
+    return el;
+  }
+
+  function addInfoHotspot(position, label) {
+    const el = createHotspotEl(label);
+    infoHotspots.push({ position: position.clone(), el });
+  }
 
   function updateInfoHotspots() {
     if (renderer.xr.isPresenting) {
@@ -1693,7 +1811,6 @@
     const v = new THREE.Vector3();
     for (const hs of infoHotspots) {
       v.copy(hs.position).project(camera);
-      // z > 1 означает что точка за камерой
       if (v.z > 1) { hs.el.style.display = 'none'; continue; }
       const x = (v.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
@@ -1702,6 +1819,49 @@
       hs.el.style.display = 'flex';
     }
   }
+
+  // --- Режим расстановки хотспотов ---
+  let hotspotMode = false;
+  let pendingHotspotPos = null;
+
+  const hotspotPopup   = document.getElementById('hotspot-popup');
+  const hotspotInput   = document.getElementById('hotspot-popup-input');
+  const hotspotBtnOk   = document.getElementById('hotspot-popup-ok');
+  const hotspotBtnCancel = document.getElementById('hotspot-popup-cancel');
+  const btnAddHotspot  = document.getElementById('btn-add-hotspot');
+
+  window.toggleHotspotMode = () => {
+    hotspotMode = !hotspotMode;
+    document.body.classList.toggle('hotspot-mode', hotspotMode);
+    btnAddHotspot.classList.toggle('hotspot-active', hotspotMode);
+  };
+
+  function openHotspotPopup(pos) {
+    pendingHotspotPos = pos;
+    hotspotInput.value = '';
+    hotspotPopup.style.display = 'flex';
+    setTimeout(() => hotspotInput.focus(), 50);
+  }
+
+  function closeHotspotPopup() {
+    hotspotPopup.style.display = 'none';
+    pendingHotspotPos = null;
+  }
+
+  hotspotBtnOk.addEventListener('click', () => {
+    const label = hotspotInput.value.trim();
+    if (label && pendingHotspotPos) {
+      addInfoHotspot(pendingHotspotPos, label);
+    }
+    closeHotspotPopup();
+  });
+
+  hotspotBtnCancel.addEventListener('click', closeHotspotPopup);
+
+  hotspotInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') hotspotBtnOk.click();
+    if (e.key === 'Escape') closeHotspotPopup();
+  });
 
   // ============================================
   // UI
