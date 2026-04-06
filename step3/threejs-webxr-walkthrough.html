@@ -1240,6 +1240,7 @@
   // ============================================
 
   let navAnimating = false;
+  let onNavAnimEnd = null;
   let navAnimProgress = 0;
   const navAnimFrom = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
   const navAnimTo   = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
@@ -1544,48 +1545,24 @@
   });
 
   // --- Scroll: navigate between preset waypoints ---
-  let scrollCooldown = false; // блокирует скролл после анимации
-
-  // Сбрасываем кулдаун после окончания анимации (300мс задержка чтобы трекпад не дублировал)
-  function onNavAnimEnd() {
-    setTimeout(() => { scrollCooldown = false; }, 900);
-  }
-
+  let scrollThrottle = false;
   renderer.domElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
-    if (navAnimating || scrollCooldown) return;
-    // Игнорируем мелкие инерционные события трекпада (< 30px)
-    if (Math.abs(e.deltaY) < 30) return;
-    scrollCooldown = true;
+    if (scrollThrottle || navAnimating) return;
 
-    // скролл вверх (deltaY < 0) = вперёд, скролл вниз (deltaY > 0) = назад
-    const scrollDir = e.deltaY < 0 ? 1 : -1;
+    const dir = e.deltaY > 0 ? 1 : -1;
+    const next = currentWpIndex + dir;
+    if (next < 0 || next >= presetWaypoints.length) return;
 
-    // Горизонтальное направление взгляда
-    const camFwd = new THREE.Vector3();
-    camera.getWorldDirection(camFwd);
-    camFwd.y = 0;
-    camFwd.normalize();
-
-    // Ближайшая точка в нужном направлении (конус ±72°, dot > 0.3)
-    let bestIdx = -1;
-    let bestDist = Infinity;
-    presetWaypoints.forEach((wp, i) => {
-      const dx = wp.position.x - camera.position.x;
-      const dz = wp.position.z - camera.position.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < 0.5) return; // стоим на этой точке
-      const dot = (dx / dist) * camFwd.x + (dz / dist) * camFwd.z;
-      if (dot * scrollDir > 0.3 && dist < bestDist) {
-        bestDist = dist;
-        bestIdx = i;
-      }
-    });
-
-    if (bestIdx === -1) { scrollCooldown = false; return; }
-    currentWpIndex = bestIdx;
+    scrollThrottle = true;
+    currentWpIndex = next;
     flyTo(presetWaypoints[currentWpIndex].position);
+    // Release throttle only after animation finishes + 400ms to absorb trackpad momentum
+    onNavAnimEnd = () => {
+      onNavAnimEnd = null;
+      setTimeout(() => { scrollThrottle = false; }, 400);
+    };
   }, { passive: false });
 
   // ============================================
