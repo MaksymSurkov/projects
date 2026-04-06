@@ -876,6 +876,8 @@
   let xrSessionMode = 'none'; // 'none' | 'ar' | 'vr'
   let arReferenceSpace = null;
   let arHitTestRetryAt = 0;
+  let arHitTestFailCount = 0;
+  let arUseFallbackReticle = false;
 
   function isARSession(session) {
     if (!session) return false;
@@ -899,6 +901,11 @@
   arReticle.renderOrder = 1000;
   arReticle.visible = false;
   scene.add(arReticle);
+  const _arFallbackDir = new THREE.Vector3();
+  const _arFallbackPos = new THREE.Vector3();
+  const _arFallbackQuat = new THREE.Quaternion();
+  const _arFallbackScale = new THREE.Vector3(1, 1, 1);
+  const _arFallbackEuler = new THREE.Euler();
 
   // AR-контроллер — реагирует на тап по экрану
   // Используем отдельный обработчик, который проверяет
@@ -1050,6 +1057,43 @@
 
   let currentModel = null;
   let isWireframe = false;
+  const MODEL_TEXTURE_KEYS = ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','lightMap','envMap','alphaMap','bumpMap','displacementMap'];
+
+  function releaseModelGpuForAR(model) {
+    if (!model) return;
+    const disposedTextures = new Set();
+    model.traverse((child) => {
+      if (!child.isMesh) return;
+      if (child.geometry) child.geometry.dispose();
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        if (!mat) return;
+        for (const key of MODEL_TEXTURE_KEYS) {
+          const tex = mat[key];
+          if (tex && tex.isTexture && !disposedTextures.has(tex)) {
+            disposedTextures.add(tex);
+            tex.dispose();
+          }
+        }
+      });
+    });
+  }
+
+  function restoreModelGpuAfterAR(model) {
+    if (!model) return;
+    model.traverse((child) => {
+      if (!child.isMesh) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        if (!mat) return;
+        for (const key of MODEL_TEXTURE_KEYS) {
+          const tex = mat[key];
+          if (tex && tex.isTexture) tex.needsUpdate = true;
+        }
+        mat.needsUpdate = true;
+      });
+    });
+  }
 
   function loadModelFromFile(file) {
     document.getElementById('loading').classList.add('active');
@@ -1250,6 +1294,7 @@
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = isAR ? 'block' : 'none';
     document.getElementById('start-screen').classList.add('hidden');
+    hotspotsContainer.style.display = 'none';
 
     // Сохраняем позицию камеры — восстановим после выхода из AR
     _arSavedCamPos.copy(camera.position);
@@ -1271,13 +1316,18 @@
 
     if (isAR) {
       // В AR прячем исходную модель, показываем только клон после тапа.
-      if (currentModel) currentModel.visible = false;
+      if (currentModel) {
+        currentModel.visible = false;
+        releaseModelGpuForAR(currentModel);
+      }
 
       // Сбрасываем AR hit-test state
       if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
       hitTestSource = null;
       hitTestSourceRequested = false;
       arHitTestRetryAt = 0;
+      arHitTestFailCount = 0;
+      arUseFallbackReticle = false;
       arReferenceSpace = null;
       arReticle.visible = false;
 
@@ -1301,6 +1351,8 @@
       hitTestSourceRequested = false;
       arReferenceSpace = null;
       arHitTestRetryAt = 0;
+      arHitTestFailCount = 0;
+      arUseFallbackReticle = false;
     });
   });
 
@@ -1314,6 +1366,7 @@
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
     document.getElementById('ar-hint').style.display = 'none';
     document.getElementById('start-screen').classList.add('hidden');
+    hotspotsContainer.style.display = 'block';
 
     if (scene.fog) {
       scene.fog.density = 0.03;
@@ -1329,6 +1382,7 @@
 
     if (currentModel) {
       currentModel.visible = true;
+      restoreModelGpuAfterAR(currentModel);
     }
     grid.visible = gridVisible;
     shadowFloor.visible = true;
@@ -1350,6 +1404,8 @@
     hitTestSourceRequested = false;
     arReferenceSpace = null;
     arHitTestRetryAt = 0;
+    arHitTestFailCount = 0;
+    arUseFallbackReticle = false;
     arReticle.visible = false;
     currentMode = 'orbit';
     setOrbitMode();
@@ -1474,6 +1530,7 @@
         if (now >= arHitTestRetryAt) {
           if (typeof session.requestHitTestSource !== 'function') {
             arHitTestRetryAt = Number.POSITIVE_INFINITY;
+            arUseFallbackReticle = true;
             if (arHintEl) arHintEl.textContent = 'Hit-test is not available on this device/browser';
           } else {
             hitTestSourceRequested = true;
@@ -1484,6 +1541,8 @@
               .then((source) => {
                 hitTestSource = source;
                 arHitTestRetryAt = 0;
+                arHitTestFailCount = 0;
+                arUseFallbackReticle = false;
                 if (arHintEl && !arModelPlaced) {
                   arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
                 }
@@ -1491,6 +1550,8 @@
               .catch((err) => {
                 hitTestSource = null;
                 arHitTestRetryAt = performance.now() + 1500;
+                arHitTestFailCount += 1;
+                if (arHitTestFailCount >= 3) arUseFallbackReticle = true;
                 if (arHintEl && !arModelPlaced) arHintEl.textContent = 'Searching for surface...';
                 console.warn('[AR] Hit-test setup failed:', err);
               })
@@ -1513,6 +1574,16 @@
         } else {
           arReticle.visible = false;
         }
+      } else if (arUseFallbackReticle) {
+        camera.getWorldDirection(_arFallbackDir);
+        _arFallbackPos.copy(camera.position).addScaledVector(_arFallbackDir, 1.5);
+        _arFallbackPos.y -= 0.6;
+        const yaw = Math.atan2(_arFallbackDir.x, _arFallbackDir.z);
+        _arFallbackEuler.set(-Math.PI / 2, yaw, 0, 'YXZ');
+        _arFallbackQuat.setFromEuler(_arFallbackEuler);
+        arReticle.matrix.compose(_arFallbackPos, _arFallbackQuat, _arFallbackScale);
+        arReticle.matrixWorldNeedsUpdate = true;
+        arReticle.visible = true;
       } else if (!arModelPlaced) {
         arReticle.visible = false;
       }
@@ -1532,7 +1603,9 @@
     constrainCamera();
 
     // Info hotspots — проекция 3D → 2D
-    updateInfoHotspots();
+    if (xrSessionMode !== 'ar') {
+      updateInfoHotspots();
+    }
 
     renderer.render(scene, camera);
   });
