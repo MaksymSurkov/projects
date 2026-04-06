@@ -1387,6 +1387,9 @@
         `Z: <span>${camera.position.z.toFixed(1)}</span>`;
     }
 
+    // Ограничение камеры внутри помещения
+    constrainCamera();
+
     // Info hotspots — проекция 3D → 2D
     updateInfoHotspots();
 
@@ -1868,20 +1871,72 @@
     if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
   }
 
+  const _occlusionRay = new THREE.Raycaster();
+
   function updateInfoHotspots() {
-    if (renderer.xr.isPresenting) {
+    if (renderer.xr.isPresenting || !currentModel) {
       infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
       return;
     }
     const v = new THREE.Vector3();
+    const camPos = camera.position.clone();
+
     for (const hs of infoHotspots) {
       v.copy(hs.position).project(camera);
       if (v.z > 1) { hs.el.style.display = 'none'; continue; }
+
+      // Проверка окклюзии: луч от камеры до хотспота
+      const toHs = new THREE.Vector3().subVectors(hs.position, camPos);
+      const dist = toHs.length();
+      _occlusionRay.set(camPos, toHs.normalize());
+      _occlusionRay.far = dist - 0.08; // не считаем саму поверхность хотспота
+      const occHits = _occlusionRay.intersectObject(currentModel, true);
+      if (occHits.length > 0) { hs.el.style.display = 'none'; continue; }
+
       const x = (v.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
       hs.el.style.left = x + 'px';
       hs.el.style.top  = y + 'px';
       hs.el.style.display = 'flex';
+    }
+  }
+
+  // ============================================
+  // ОГРАНИЧЕНИЕ КАМЕРЫ ВНУТРИ ПОМЕЩЕНИЯ
+  // ============================================
+  const _confineRay = new THREE.Raycaster();
+  const _confineDirs = [
+    new THREE.Vector3( 1, 0, 0),
+    new THREE.Vector3(-1, 0, 0),
+    new THREE.Vector3( 0, 0, 1),
+    new THREE.Vector3( 0, 0,-1),
+    new THREE.Vector3( 0, 1, 0),  // потолок
+    new THREE.Vector3( 0,-1, 0),  // пол
+  ];
+  const CONFINE_MARGIN = 0.25; // минимальное расстояние до стены/потолка
+  const FLOOR_MARGIN   = 0.05; // минимальное расстояние до пола
+
+  function constrainCamera() {
+    if (!currentModel || renderer.xr.isPresenting || navAnimating) return;
+
+    let pushed = false;
+    for (let i = 0; i < _confineDirs.length; i++) {
+      const dir = _confineDirs[i];
+      const margin = (i === 5) ? FLOOR_MARGIN : CONFINE_MARGIN;
+      _confineRay.set(camera.position, dir);
+      _confineRay.far = margin;
+      const hits = _confineRay.intersectObject(currentModel, true);
+      if (hits.length > 0) {
+        const push = margin - hits[0].distance;
+        camera.position.addScaledVector(dir, -push);
+        pushed = true;
+      }
+    }
+
+    if (pushed && currentMode === 'orbit') {
+      const fwd = new THREE.Vector3();
+      camera.getWorldDirection(fwd);
+      orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
     }
   }
 
