@@ -1202,20 +1202,36 @@
     _arSavedCamPos.copy(camera.position);
     _arSavedTarget.copy(orbitControls.target);
 
-    // Scene adjustments — полностью убираем тяжёлые объекты из сцена-графа
+    // Scene adjustments
     if (scene.fog) scene.fog.density = 0;
     scene.remove(grid);
     scene.remove(shadowFloor);
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
-    if (currentModel) scene.remove(currentModel);
     navReticle.visible = false;
     orbitControls.enabled = false;
     presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
-    // Отключаем тени и снижаем pixel ratio — главная причина тормозов на мобильном
+    // Отключаем тени и снижаем pixel ratio
     renderer.shadowMap.enabled = false;
     renderer.setPixelRatio(1);
+
+    // Освобождаем GPU-память модели — иначе AR сессия + модель = context loss и краш браузера
+    // CPU-данные (image, arraybuffer) остаются — Three.js перезальёт при следующем рендере
+    if (currentModel) {
+      scene.remove(currentModel);
+      currentModel.traverse(child => {
+        if (!child.isMesh) return;
+        if (child.geometry) child.geometry.dispose();
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(mat => {
+          if (!mat) return;
+          ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','lightMap','envMap']
+            .forEach(k => { if (mat[k] && mat[k].isTexture) mat[k].dispose(); });
+          mat.dispose();
+        });
+      });
+    }
 
     // Tap handler — works for both transient (mobile screen tap) and controller
     session.addEventListener('select', () => {
@@ -1247,23 +1263,21 @@
 
     if (currentModel) {
       scene.add(currentModel);
-      // После удаления из сцены Three.js теряет привязку материалов — принудительно обновляем
+      // Помечаем все материалы как обновлённые — Three.js перезальёт геометрии и текстуры
       currentModel.traverse(child => {
-        if (child.isMesh && child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(m => { m.needsUpdate = true; });
-        }
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => { if (m) m.needsUpdate = true; });
       });
     }
     scene.add(grid);
     scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
-    // Восстанавливаем позицию камеры сразу и форсируем рендер — иначе белый экран
+    // Восстанавливаем позицию камеры
     camera.position.copy(_arSavedCamPos);
     orbitControls.target.copy(_arSavedTarget);
     orbitControls.update();
-    renderer.render(scene, camera);
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
