@@ -1905,30 +1905,47 @@
   // ОГРАНИЧЕНИЕ КАМЕРЫ ВНУТРИ ПОМЕЩЕНИЯ
   // ============================================
   const _confineRay = new THREE.Raycaster();
-  const _confineDirs = [
+  const _wallDirs = [
     new THREE.Vector3( 1, 0, 0),
     new THREE.Vector3(-1, 0, 0),
     new THREE.Vector3( 0, 0, 1),
     new THREE.Vector3( 0, 0,-1),
     new THREE.Vector3( 0, 1, 0),  // потолок
-    new THREE.Vector3( 0,-1, 0),  // пол
   ];
-  const CONFINE_MARGIN = 0.25; // минимальное расстояние до стены/потолка
-  const FLOOR_MARGIN   = 0.05; // минимальное расстояние до пола
+  const CONFINE_MARGIN = 0.25;
+  const FLOOR_MARGIN   = 0.15;
 
   function constrainCamera() {
-    if (!currentModel || renderer.xr.isPresenting || navAnimating) return;
+    if (!currentModel || renderer.xr.isPresenting) return;
+
+    // --- Пол: всегда активно, даже во время анимации ---
+    // Кастуем с 0.6м выше камеры вниз — работает даже если камера уже под полом
+    _confineRay.set(
+      new THREE.Vector3(camera.position.x, camera.position.y + 0.6, camera.position.z),
+      new THREE.Vector3(0, -1, 0)
+    );
+    _confineRay.far = 0.6 + FLOOR_MARGIN;
+    const floorHits = _confineRay.intersectObject(currentModel, true);
+    for (const fh of floorHits) {
+      if (!fh.face) continue;
+      const fn = fh.face.normal.clone().transformDirection(fh.object.matrixWorld).normalize();
+      if (fn.y > 0.5) {
+        const minY = fh.point.y + FLOOR_MARGIN;
+        if (camera.position.y < minY) camera.position.y = minY;
+        break;
+      }
+    }
+
+    // --- Стены и потолок: только вне анимации ---
+    if (navAnimating) return;
 
     let pushed = false;
-    for (let i = 0; i < _confineDirs.length; i++) {
-      const dir = _confineDirs[i];
-      const margin = (i === 5) ? FLOOR_MARGIN : CONFINE_MARGIN;
+    for (const dir of _wallDirs) {
       _confineRay.set(camera.position, dir);
-      _confineRay.far = margin;
+      _confineRay.far = CONFINE_MARGIN;
       const hits = _confineRay.intersectObject(currentModel, true);
       if (hits.length > 0) {
-        const push = margin - hits[0].distance;
-        camera.position.addScaledVector(dir, -push);
+        camera.position.addScaledVector(dir, -(CONFINE_MARGIN - hits[0].distance));
         pushed = true;
       }
     }
@@ -1953,7 +1970,7 @@
   window.toggleHotspotMode = () => {
     hotspotMode = !hotspotMode;
     document.body.classList.toggle('hotspot-mode', hotspotMode);
-    btnAddHotspot.classList.toggle('hotspot-active', hotspotMode);
+    if (btnAddHotspot) btnAddHotspot.classList.toggle('hotspot-active', hotspotMode);
   };
 
   function openHotspotPopup(pos) {
