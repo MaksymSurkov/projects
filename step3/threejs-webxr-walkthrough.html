@@ -1196,14 +1196,15 @@
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = 'block';
 
-    // Scene adjustments
+    // Scene adjustments — полностью убираем тяжёлые объекты из сцена-графа
     if (scene.fog) scene.fog.density = 0;
-    grid.visible = false;
-    shadowFloor.visible = false;
+    scene.remove(grid);
+    scene.remove(shadowFloor);
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
-    if (currentModel) currentModel.visible = false;
+    if (currentModel) scene.remove(currentModel);
     navReticle.visible = false;
+    orbitControls.enabled = false;
     presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
     // Отключаем тени и снижаем pixel ratio — главная причина тормозов на мобильном
@@ -1230,16 +1231,17 @@
     document.getElementById('ar-hint').style.display = 'none';
 
     scene.fog.density = 0.03;
-    grid.visible = true;
-    shadowFloor.visible = true;
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
+    orbitControls.enabled = true;
 
     // Восстанавливаем тени и pixel ratio
     renderer.shadowMap.enabled = true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    if (currentModel) currentModel.visible = true;
+    if (currentModel) scene.add(currentModel);
+    scene.add(grid);
+    scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
     if (arPlacedModel) {
@@ -1253,7 +1255,6 @@
     arReticle.visible = false;
 
     currentMode = 'orbit';
-    orbitControls.enabled = true;
   });
 
   // ============================================
@@ -1362,12 +1363,14 @@
       const referenceSpace = renderer.xr.getReferenceSpace();
 
       if (!hitTestSourceRequested && session) {
-        session.requestReferenceSpace('viewer').then((viewerSpace) => {
-          session.requestHitTestSource({ space: viewerSpace }).then((source) => {
-            hitTestSource = source;
-          });
-        });
         hitTestSourceRequested = true;
+        session.requestReferenceSpace('viewer').then((viewerSpace) => {
+          return session.requestHitTestSource({ space: viewerSpace });
+        }).then((source) => {
+          hitTestSource = source;
+        }).catch(() => {
+          hitTestSourceRequested = false; // retry next frame if failed
+        });
       }
 
       if (hitTestSource && referenceSpace) {
