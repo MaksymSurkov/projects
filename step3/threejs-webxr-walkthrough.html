@@ -600,7 +600,7 @@
   <button class="btn" onclick="toggleWireframe()">Wireframe</button>
   <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
-  <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button>
+  <!-- <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button> -->
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
@@ -1876,7 +1876,13 @@
   });
 
   // Предустановленные хотспоты
-  addInfoHotspot(new THREE.Vector3(-3.652, 2.023, 1.318), 'собака');
+  addInfoHotspot(new THREE.Vector3(-3.652,  2.023,  1.318), 'Dog');
+  addInfoHotspot(new THREE.Vector3(-2.223,  1.946, -3.315), 'Ferris Wheel');
+  addInfoHotspot(new THREE.Vector3(-7.003,  2.022,  0.776), 'Horse');
+  addInfoHotspot(new THREE.Vector3(-8.966,  2.051, -0.960), 'Woman');
+  addInfoHotspot(new THREE.Vector3(-14.604, 1.968, -0.956), 'Car');
+  addInfoHotspot(new THREE.Vector3(-14.310, 2.081,  0.767), 'Boat');
+  addInfoHotspot(new THREE.Vector3(-20.926, 1.538, -0.026), 'Ball');
 
   // ============================================
   // UI
