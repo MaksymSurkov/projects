@@ -732,6 +732,7 @@
   let vrSupported = false;
   let arSupported = false;
   const xrStatus = document.getElementById('xr-status');
+  let xrRequestedMode = null; // 'ar' | 'vr' | null
 
   async function setupXRButtons() {
     // Проверяем VR
@@ -749,6 +750,7 @@
     const vrButton = VRButton.createButton(renderer);
     vrButton.classList.add('xr-btn');
     document.body.appendChild(vrButton);
+    vrButton.addEventListener('click', () => { xrRequestedMode = 'vr'; });
 
     // AR кнопка — с hit-test для размещения модели
     // domOverlay позволяет показывать HTML-элементы поверх AR
@@ -759,6 +761,7 @@
     });
     arButton.classList.add('xr-btn');
     document.body.appendChild(arButton);
+    arButton.addEventListener('click', () => { xrRequestedMode = 'ar'; });
 
     // Обновляем статус
     const statuses = [];
@@ -871,6 +874,8 @@
   let _arSavedTarget = new THREE.Vector3();
   let arPlacedModel = null; // клон модели для AR
   let xrSessionMode = 'none'; // 'none' | 'ar' | 'vr'
+  let arReferenceSpace = null;
+  let arHitTestRetryAt = 0;
 
   function isARSession(session) {
     if (!session) return false;
@@ -880,9 +885,18 @@
 
   const arReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.1, 0.15, 32).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color: 0x4dabf7, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({
+      color: 0x4dabf7,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
+      depthWrite: false
+    })
   );
   arReticle.matrixAutoUpdate = false;
+  arReticle.frustumCulled = false;
+  arReticle.renderOrder = 1000;
   arReticle.visible = false;
   scene.add(arReticle);
 
@@ -1218,12 +1232,16 @@
   renderer.xr.addEventListener('sessionstart', () => {
     const session = renderer.xr.getSession();
     if (!session) return;
-    const isAR = isARSession(session);
-    xrSessionMode = isAR ? 'ar' : 'vr';
+    const detectedMode = isARSession(session) ? 'ar' : 'vr';
+    xrSessionMode = xrRequestedMode || detectedMode;
+    xrRequestedMode = null;
+    const isAR = xrSessionMode === 'ar';
 
     // Transparent background for AR camera feed
     if (isAR) {
       renderer.setClearColor(0x000000, 0);
+    } else {
+      renderer.setClearColor(backgrounds[bgIndex], 1);
     }
 
     // Hide UI
@@ -1231,6 +1249,7 @@
     document.getElementById('hud-top').style.opacity = '0';
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = isAR ? 'block' : 'none';
+    document.getElementById('start-screen').classList.add('hidden');
 
     // Сохраняем позицию камеры — восстановим после выхода из AR
     _arSavedCamPos.copy(camera.position);
@@ -1238,8 +1257,8 @@
 
     // Scene adjustments
     if (scene.fog) scene.fog.density = 0;
-    scene.remove(grid);
-    scene.remove(shadowFloor);
+    grid.visible = false;
+    shadowFloor.visible = false;
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
     navReticle.visible = false;
@@ -1251,8 +1270,21 @@
     renderer.setPixelRatio(1);
 
     if (isAR) {
-      // Убираем модель из сцены только для AR
-      if (currentModel) scene.remove(currentModel);
+      // В AR прячем исходную модель, показываем только клон после тапа.
+      if (currentModel) currentModel.visible = false;
+
+      // Сбрасываем AR hit-test state
+      if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
+      hitTestSource = null;
+      hitTestSourceRequested = false;
+      arHitTestRetryAt = 0;
+      arReferenceSpace = null;
+      arReticle.visible = false;
+
+      session.requestReferenceSpace('local-floor')
+        .catch(() => session.requestReferenceSpace('local'))
+        .then((space) => { arReferenceSpace = space; })
+        .catch(() => { arReferenceSpace = null; });
     }
 
     // BUG FIX: listener добавляется к session-объекту, который живёт ровно одну сессию —
@@ -1264,13 +1296,17 @@
     }
     // Очищаем hit-test когда сессия завершается изнутри
     session.addEventListener('end', () => {
+      if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
       hitTestSource = null;
       hitTestSourceRequested = false;
+      arReferenceSpace = null;
+      arHitTestRetryAt = 0;
     });
   });
 
   renderer.xr.addEventListener('sessionend', () => {
     xrSessionMode = 'none';
+    xrRequestedMode = null;
     renderer.setClearColor(backgrounds[bgIndex], 1);
 
     document.getElementById('controls-panel').style.display = 'flex';
@@ -1287,23 +1323,15 @@
     dirLight.intensity = 1.3;
     orbitControls.enabled = true;
 
-    // pixel ratio восстанавливаем сразу, тени — через паузу.
-    // Если включить тени немедленно, Three.js попытается перерендерить shadow map
-    // для ВСЕЙ сцены в первом же кадре → загрузка всех материалов сразу → context loss → "Aw Snap"
+    // Восстанавливаем качество после XR
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = false; // включим позже
 
     if (currentModel) {
-      scene.add(currentModel);
-      // needsUpdate=true — Three.js перезальёт материалы лениво, по мере попадания в frustum
-      currentModel.traverse(child => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => { if (m) m.needsUpdate = true; });
-      });
+      currentModel.visible = true;
     }
-    scene.add(grid);
-    scene.add(shadowFloor);
+    grid.visible = gridVisible;
+    shadowFloor.visible = true;
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
     // Восстанавливаем позицию камеры
@@ -1317,18 +1345,21 @@
       arModelPlaced = false;
     }
 
+    if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
     hitTestSource = null;
     hitTestSourceRequested = false;
+    arReferenceSpace = null;
+    arHitTestRetryAt = 0;
     arReticle.visible = false;
     currentMode = 'orbit';
     setOrbitMode();
     // Убираем AR-стиль с хотспотов
     infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
 
-    // Включаем тени через 2с — к тому времени модель уже перезалита в GPU
+    // Немного откладываем включение теней, чтобы кадр после XR стабилизировался.
     setTimeout(() => {
       if (!renderer.xr.isPresenting) renderer.shadowMap.enabled = true;
-    }, 2000);
+    }, 300);
   });
 
   // ============================================
@@ -1434,21 +1465,40 @@
     // AR hit-test — запрашиваем source на первом кадре (официальный паттерн Three.js)
     if (frame && xrSessionMode === 'ar') {
       const session = renderer.xr.getSession();
-      const referenceSpace = renderer.xr.getReferenceSpace();
+      const referenceSpace = arReferenceSpace || renderer.xr.getReferenceSpace();
+      const arHintEl = document.getElementById('ar-hint');
 
-      if (!hitTestSourceRequested && session) {
-        hitTestSourceRequested = true;
-        const arHintEl = document.getElementById('ar-hint');
-        if (arHintEl) arHintEl.textContent = 'Initializing tracking...';
-        session.requestReferenceSpace('viewer').then((viewerSpace) => {
-          return session.requestHitTestSource({ space: viewerSpace });
-        }).then((source) => {
-          hitTestSource = source;
-          if (arHintEl) arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
-        }).catch((err) => {
-          hitTestSourceRequested = false;
-          if (arHintEl) arHintEl.textContent = 'Hit-test error: ' + (err && err.message ? err.message : 'unknown');
-        });
+      // Не спамим promise-цепочки каждый кадр: повторяем только с паузой.
+      if (session && !hitTestSource && !hitTestSourceRequested) {
+        const now = performance.now();
+        if (now >= arHitTestRetryAt) {
+          if (typeof session.requestHitTestSource !== 'function') {
+            arHitTestRetryAt = Number.POSITIVE_INFINITY;
+            if (arHintEl) arHintEl.textContent = 'Hit-test is not available on this device/browser';
+          } else {
+            hitTestSourceRequested = true;
+            if (arHintEl && !arModelPlaced) arHintEl.textContent = 'Initializing tracking...';
+
+            session.requestReferenceSpace('viewer')
+              .then((viewerSpace) => session.requestHitTestSource({ space: viewerSpace }))
+              .then((source) => {
+                hitTestSource = source;
+                arHitTestRetryAt = 0;
+                if (arHintEl && !arModelPlaced) {
+                  arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
+                }
+              })
+              .catch((err) => {
+                hitTestSource = null;
+                arHitTestRetryAt = performance.now() + 1500;
+                if (arHintEl && !arModelPlaced) arHintEl.textContent = 'Searching for surface...';
+                console.warn('[AR] Hit-test setup failed:', err);
+              })
+              .finally(() => {
+                hitTestSourceRequested = false;
+              });
+          }
+        }
       }
 
       if (hitTestSource && referenceSpace) {
@@ -1463,6 +1513,8 @@
         } else {
           arReticle.visible = false;
         }
+      } else if (!arModelPlaced) {
+        arReticle.visible = false;
       }
     } else if (!renderer.xr.isPresenting) {
       arReticle.visible = false;
