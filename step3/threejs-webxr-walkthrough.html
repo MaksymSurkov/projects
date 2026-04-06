@@ -1798,21 +1798,51 @@
   const infoHotspots = [];
   const hotspotsContainer = document.getElementById('hotspots-container');
 
-  function createHotspotEl(label, position) {
+  function createHotspotEl(label) {
     const el = document.createElement('div');
     el.className = 'info-hotspot';
     el.style.display = 'none';
-    const coords = `x: ${position.x.toFixed(2)}  y: ${position.y.toFixed(2)}  z: ${position.z.toFixed(2)}`;
-    el.innerHTML = `<div class="info-hotspot-label">${label}<span class="hotspot-coords">${coords}</span></div>`;
+    el.innerHTML = `<div class="info-hotspot-label">${label}</div>`;
     hotspotsContainer.appendChild(el);
     return el;
   }
 
   function addInfoHotspot(position, label) {
     const p = position.clone();
-    const el = createHotspotEl(label, p);
-    infoHotspots.push({ position: p, el });
+    const el = createHotspotEl(label);
+    const hs = { position: p, el };
+    infoHotspots.push(hs);
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      flyToHotspot(hs);
+    });
     console.log(`[Hotspot] "${label}" → x: ${p.x.toFixed(3)}, y: ${p.y.toFixed(3)}, z: ${p.z.toFixed(3)}`);
+  }
+
+  function flyToHotspot(hs) {
+    // Отступаем от хотспота на 1.5м в сторону камеры (по XZ)
+    const dir = new THREE.Vector3()
+      .subVectors(camera.position, hs.position);
+    dir.y = 0;
+    if (dir.length() < 0.01) dir.set(1, 0, 0);
+    dir.normalize();
+
+    // Камера встаёт в 1.5м перед хотспотом на уровне пола + рост
+    const destCam = new THREE.Vector3(
+      hs.position.x + dir.x * 1.5,
+      camera.position.y,        // сохраняем текущую высоту (уже на уровне пола)
+      hs.position.z + dir.z * 1.5
+    );
+    // Взгляд — прямо на хотспот
+    const destTarget = hs.position.clone();
+
+    navAnimFrom.cam.copy(camera.position);
+    navAnimFrom.target.copy(orbitControls.target);
+    navAnimTo.cam.copy(destCam);
+    navAnimTo.target.copy(destTarget);
+    navAnimProgress = 0;
+    navAnimating = true;
+    if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
   }
 
   function updateInfoHotspots() {
