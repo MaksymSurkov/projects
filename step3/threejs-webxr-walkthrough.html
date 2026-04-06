@@ -1548,13 +1548,15 @@
 
   // Сбрасываем кулдаун после окончания анимации (300мс задержка чтобы трекпад не дублировал)
   function onNavAnimEnd() {
-    setTimeout(() => { scrollCooldown = false; }, 300);
+    setTimeout(() => { scrollCooldown = false; }, 900);
   }
 
   renderer.domElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
     if (navAnimating || scrollCooldown) return;
+    // Игнорируем мелкие инерционные события трекпада (< 30px)
+    if (Math.abs(e.deltaY) < 30) return;
     scrollCooldown = true;
 
     // скролл вверх (deltaY < 0) = вперёд, скролл вниз (deltaY > 0) = назад
