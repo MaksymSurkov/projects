@@ -1233,11 +1233,12 @@
       });
     }
 
-    // Tap handler — works for both transient (mobile screen tap) and controller
+    // BUG FIX: listener добавляется к session-объекту, который живёт ровно одну сессию —
+    // нет риска накопления, так как session — новый объект при каждом входе в AR.
     session.addEventListener('select', () => {
       if (arReticle.visible) onARSelect();
     });
-
+    // Очищаем hit-test когда сессия завершается изнутри
     session.addEventListener('end', () => {
       hitTestSource = null;
       hitTestSourceRequested = false;
@@ -1252,18 +1253,20 @@
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
     document.getElementById('ar-hint').style.display = 'none';
 
-    scene.fog.density = 0.03;
+    if (scene.fog) scene.fog.density = 0.03;
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
     orbitControls.enabled = true;
 
-    // Восстанавливаем тени и pixel ratio
-    renderer.shadowMap.enabled = true;
+    // pixel ratio восстанавливаем сразу, тени — через паузу.
+    // Если включить тени немедленно, Three.js попытается перерендерить shadow map
+    // для ВСЕЙ сцены в первом же кадре → загрузка всех материалов сразу → context loss → "Aw Snap"
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = false; // включим позже
 
     if (currentModel) {
       scene.add(currentModel);
-      // Помечаем все материалы как обновлённые — Three.js перезальёт геометрии и текстуры
+      // needsUpdate=true — Three.js перезальёт материалы лениво, по мере попадания в frustum
       currentModel.traverse(child => {
         if (!child.isMesh) return;
         const mats = Array.isArray(child.material) ? child.material : [child.material];
@@ -1288,8 +1291,10 @@
     hitTestSource = null;
     hitTestSourceRequested = false;
     arReticle.visible = false;
-
     currentMode = 'orbit';
+
+    // Включаем тени через 2с — к тому времени модель уже перезалита в GPU
+    setTimeout(() => { renderer.shadowMap.enabled = true; }, 2000);
   });
 
   // ============================================
@@ -1922,7 +1927,8 @@
   const _occlusionRay = new THREE.Raycaster();
 
   function updateInfoHotspots() {
-    if (renderer.xr.isPresenting || !currentModel) {
+    // В AR режиме currentModel убран из сцены — проекция не имеет смысла
+    if (renderer.xr.isPresenting || !currentModel || !currentModel.parent) {
       infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
       return;
     }
