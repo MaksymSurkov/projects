@@ -844,6 +844,8 @@
   let hitTestSource = null;
   let hitTestSourceRequested = false;
   let arModelPlaced = false;
+  let _arSavedCamPos = new THREE.Vector3();
+  let _arSavedTarget = new THREE.Vector3();
   let arPlacedModel = null; // клон модели для AR
 
   const arReticle = new THREE.Mesh(
@@ -1196,6 +1198,10 @@
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = 'block';
 
+    // Сохраняем позицию камеры — восстановим после выхода из AR
+    _arSavedCamPos.copy(camera.position);
+    _arSavedTarget.copy(orbitControls.target);
+
     // Scene adjustments — полностью убираем тяжёлые объекты из сцена-графа
     if (scene.fog) scene.fog.density = 0;
     scene.remove(grid);
@@ -1243,6 +1249,11 @@
     scene.add(grid);
     scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
+
+    // Восстанавливаем позицию камеры — иначе белый экран после AR
+    camera.position.copy(_arSavedCamPos);
+    orbitControls.target.copy(_arSavedTarget);
+    orbitControls.update();
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
@@ -1364,12 +1375,16 @@
 
       if (!hitTestSourceRequested && session) {
         hitTestSourceRequested = true;
+        const arHintEl = document.getElementById('ar-hint');
+        if (arHintEl) arHintEl.textContent = 'Initializing tracking...';
         session.requestReferenceSpace('viewer').then((viewerSpace) => {
           return session.requestHitTestSource({ space: viewerSpace });
         }).then((source) => {
           hitTestSource = source;
-        }).catch(() => {
-          hitTestSourceRequested = false; // retry next frame if failed
+          if (arHintEl) arHintEl.textContent = 'Move phone to scan floor · Tap to place';
+        }).catch((err) => {
+          hitTestSourceRequested = false;
+          if (arHintEl) arHintEl.textContent = 'Hit-test error: ' + (err && err.message ? err.message : 'unknown');
         });
       }
 
