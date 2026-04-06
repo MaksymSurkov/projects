@@ -694,8 +694,9 @@
   // СЦЕНА, КАМЕРА, РЕНДЕРЕР
   // ============================================
   const DEFAULT_BG = 0x0d0d14;
-  const DEFAULT_PIXEL_RATIO = Math.min(window.devicePixelRatio, 2);
-  const AR_PIXEL_RATIO = 0.75;
+  const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const DEFAULT_PIXEL_RATIO = IS_MOBILE ? 1 : Math.min(window.devicePixelRatio, 2);
+  const AR_PIXEL_RATIO = IS_MOBILE ? 0.6 : 1;
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(DEFAULT_BG, 0.03);
 
@@ -713,7 +714,7 @@
   const DEFAULT_TONE_EXPOSURE = 1.2;
   renderer.toneMapping = DEFAULT_TONE_MAPPING;
   renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !IS_MOBILE;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // ============================================
@@ -1030,6 +1031,7 @@
     if (renderer.xr.isPresenting) return;
     const gl = renderer.getContext();
     if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) return;
+    webglContextLost = false;
 
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -1329,6 +1331,14 @@
         currentModel.visible = false;
       }
 
+      // Сбрасываем размещение AR-сеанса, чтобы повторные входы начинались
+      // с чистого состояния даже после зависшего/аварийного выхода.
+      if (arPlacedModel && arPlacedModel !== currentModel) {
+        scene.remove(arPlacedModel);
+      }
+      arPlacedModel = null;
+      arModelPlaced = false;
+
       // Сбрасываем AR hit-test state
       if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
       hitTestSource = null;
@@ -1366,6 +1376,7 @@
 
   renderer.xr.addEventListener('sessionend', () => {
     logContextState('sessionend');
+    webglContextLost = false;
     xrSessionMode = 'none';
     xrRequestedMode = null;
     renderer.setClearColor(DEFAULT_BG, 1);
@@ -1388,7 +1399,7 @@
 
     // Восстанавливаем качество после XR
     renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
-    renderer.shadowMap.enabled = false; // включим позже
+    renderer.shadowMap.enabled = !IS_MOBILE;
 
     if (currentModel) {
       currentModel.position.copy(_arSavedModelPos);
@@ -1423,11 +1434,6 @@
     setOrbitMode();
     // Убираем AR-стиль с хотспотов
     infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
-
-    // Немного откладываем включение теней, чтобы кадр после XR стабилизировался.
-    setTimeout(() => {
-      if (!renderer.xr.isPresenting) renderer.shadowMap.enabled = true;
-    }, 300);
 
     // Жёсткое восстановление рендера после выхода из AR/VR.
     setTimeout(() => restoreRenderer(), 0);
@@ -1479,8 +1485,14 @@
   const posDisplay = document.getElementById('position-display');
 
   renderer.setAnimationLoop((timestamp, frame) => {
-    if (webglContextLost) return;
     const gl = renderer.getContext();
+    if (webglContextLost) {
+      if (gl && typeof gl.isContextLost === 'function' && !gl.isContextLost()) {
+        webglContextLost = false;
+      } else if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) {
+        return;
+      }
+    }
     if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) return;
 
     const delta = clock.getDelta();
@@ -1606,8 +1618,7 @@
 
       const shouldShowFallback =
         !hasSurfacePose &&
-        !arModelPlaced &&
-        (arUseFallbackReticle || !hitTestSource || arHitTestFailCount > 0);
+        !arModelPlaced;
 
       if (shouldShowFallback) {
         camera.getWorldDirection(_arFallbackDir);
