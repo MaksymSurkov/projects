@@ -1548,47 +1548,35 @@
   renderer.domElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
-    if (scrollThrottle || navAnimating) return; // ждём пока закончится предыдущий перелёт
+    if (scrollThrottle || navAnimating) return;
     scrollThrottle = true;
-    setTimeout(() => { scrollThrottle = false; }, 800);
-
-    // Find nearest waypoint to camera as starting reference
-    if (currentWpIndex === -1) {
-      let minDist = Infinity;
-      presetWaypoints.forEach((wp, i) => {
-        const d = camera.position.distanceTo(wp.position);
-        if (d < minDist) { minDist = d; currentWpIndex = i; }
-      });
-    }
+    setTimeout(() => { scrollThrottle = false; }, 900);
 
     const scrollDir = e.deltaY > 0 ? 1 : -1; // 1 = вперёд, -1 = назад
 
-    // Горизонтальное направление взгляда камеры
+    // Горизонтальное направление взгляда
     const camFwd = new THREE.Vector3();
     camera.getWorldDirection(camFwd);
     camFwd.y = 0;
     camFwd.normalize();
 
-    // Ищем ближайший вейпоинт в направлении скролла
+    // Ищем БЛИЖАЙШУЮ точку в нужном направлении (конус ±72°)
     let bestIdx = -1;
-    let bestScore = -Infinity;
+    let bestDist = Infinity;
     presetWaypoints.forEach((wp, i) => {
-      const toWp = new THREE.Vector3(
-        wp.position.x - camera.position.x,
-        0,
-        wp.position.z - camera.position.z
-      );
-      const dist = toWp.length();
-      if (dist < 0.5) return; // стоим на этой точке — пропускаем
-      toWp.normalize();
-      const alignment = toWp.dot(camFwd) * scrollDir; // > 0 если точка в нужном направлении
-      if (alignment > 0.2) { // минимальный угол ~78°
-        const score = alignment / dist; // предпочитаем ближние точки по курсу
-        if (score > bestScore) { bestScore = score; bestIdx = i; }
+      const dx = wp.position.x - camera.position.x;
+      const dz = wp.position.z - camera.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 0.5) return; // мы на этой точке
+      const dot = (dx / dist) * camFwd.x + (dz / dist) * camFwd.z;
+      // dot * scrollDir > 0.3 → точка в нужной полусфере (конус ~72°)
+      if (dot * scrollDir > 0.3 && dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
       }
     });
 
-    if (bestIdx === -1) return; // нет точек в этом направлении
+    if (bestIdx === -1) return;
     currentWpIndex = bestIdx;
     flyTo(presetWaypoints[currentWpIndex].position);
   }, { passive: false });
