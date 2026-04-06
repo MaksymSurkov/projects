@@ -600,7 +600,7 @@
   <button class="btn" onclick="toggleWireframe()">Wireframe</button>
   <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
-  <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button>
+  <!-- <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button> -->
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
@@ -1874,6 +1874,9 @@
     if (e.key === 'Enter') hotspotBtnOk.click();
     if (e.key === 'Escape') closeHotspotPopup();
   });
+
+  // Предустановленные хотспоты
+  addInfoHotspot(new THREE.Vector3(-3.652, 2.023, 1.318), 'собака');
 
   // ============================================
   // UI
