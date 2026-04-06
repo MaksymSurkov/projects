@@ -694,6 +694,8 @@
   // СЦЕНА, КАМЕРА, РЕНДЕРЕР
   // ============================================
   const DEFAULT_BG = 0x0d0d14;
+  const DEFAULT_PIXEL_RATIO = Math.min(window.devicePixelRatio, 2);
+  const AR_PIXEL_RATIO = 0.75;
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(DEFAULT_BG, 0.03);
 
@@ -704,11 +706,13 @@
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
   renderer.setClearColor(DEFAULT_BG);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  const DEFAULT_TONE_MAPPING = THREE.ACESFilmicToneMapping;
+  const DEFAULT_TONE_EXPOSURE = 1.2;
+  renderer.toneMapping = DEFAULT_TONE_MAPPING;
+  renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -731,6 +735,26 @@
   let arSupported = false;
   const xrStatus = document.getElementById('xr-status');
   let xrRequestedMode = null; // 'ar' | 'vr' | null
+  let webglContextLost = false;
+
+  // Android Chrome after AR can lose WebGL context / pause rendering.
+  renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    webglContextLost = true;
+    xrStatus.textContent = 'WebGL context lost… recovering';
+  });
+  renderer.domElement.addEventListener('webglcontextrestored', () => {
+    webglContextLost = false;
+    restoreRenderer();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      setTimeout(() => { if (!renderer.xr.isPresenting) restoreRenderer(); }, 60);
+    }
+  });
+  window.addEventListener('pageshow', () => {
+    setTimeout(() => { if (!renderer.xr.isPresenting) restoreRenderer(); }, 60);
+  });
 
   async function setupXRButtons() {
     // Проверяем VR
@@ -1002,6 +1026,36 @@
   const velocity = new THREE.Vector3();
   const direction = new THREE.Vector3();
 
+  function restoreRenderer() {
+    if (renderer.xr.isPresenting) return;
+    const gl = renderer.getContext();
+    if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) return;
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+    renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
+    renderer.setClearColor(DEFAULT_BG, 1);
+    renderer.toneMapping = DEFAULT_TONE_MAPPING;
+    renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
+    if (scene.fog) {
+      scene.fog.density = 0.03;
+      scene.fog.color.setHex(DEFAULT_BG);
+    }
+    renderer.resetState();
+    renderer.clear(true, true, true);
+    orbitControls.update();
+    renderer.render(scene, camera);
+  }
+
+  function logContextState(tag) {
+    const gl = renderer.getContext();
+    const lost = !!(gl && typeof gl.isContextLost === 'function' && gl.isContextLost());
+    console.log(`[WebGL] ${tag} contextLost=${lost}`);
+  }
+
   // ============================================
   // ОСВЕЩЕНИЕ
   // ============================================
@@ -1224,6 +1278,7 @@
   renderer.xr.addEventListener('sessionstart', () => {
     const session = renderer.xr.getSession();
     if (!session) return;
+    logContextState('sessionstart');
     const detectedMode = isARSession(session) ? 'ar' : 'vr';
     xrSessionMode = xrRequestedMode || detectedMode;
     xrRequestedMode = null;
@@ -1235,6 +1290,8 @@
     } else {
       renderer.setClearColor(DEFAULT_BG, 1);
     }
+    renderer.toneMapping = isAR ? THREE.NoToneMapping : DEFAULT_TONE_MAPPING;
+    renderer.toneMappingExposure = isAR ? 1.0 : DEFAULT_TONE_EXPOSURE;
 
     // Hide UI
     document.getElementById('controls-panel').style.display = 'none';
@@ -1256,9 +1313,9 @@
     orbitControls.enabled = false;
     presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
-    // Отключаем тени и снижаем pixel ratio
+    // Отключаем тени и снижаем pixel ratio в AR для стабильности.
     renderer.shadowMap.enabled = false;
-    renderer.setPixelRatio(1);
+    renderer.setPixelRatio(isAR ? AR_PIXEL_RATIO : DEFAULT_PIXEL_RATIO);
 
     if (isAR) {
       // В AR временно скрываем модель до первого размещения.
@@ -1308,6 +1365,7 @@
   });
 
   renderer.xr.addEventListener('sessionend', () => {
+    logContextState('sessionend');
     xrSessionMode = 'none';
     xrRequestedMode = null;
     renderer.setClearColor(DEFAULT_BG, 1);
@@ -1322,12 +1380,14 @@
       scene.fog.density = 0.03;
       scene.fog.color.setHex(DEFAULT_BG);
     }
+    renderer.toneMapping = DEFAULT_TONE_MAPPING;
+    renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
     orbitControls.enabled = true;
 
     // Восстанавливаем качество после XR
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
     renderer.shadowMap.enabled = false; // включим позже
 
     if (currentModel) {
@@ -1368,6 +1428,18 @@
     setTimeout(() => {
       if (!renderer.xr.isPresenting) renderer.shadowMap.enabled = true;
     }, 300);
+
+    // Жёсткое восстановление рендера после выхода из AR/VR.
+    setTimeout(() => restoreRenderer(), 0);
+    setTimeout(() => restoreRenderer(), 120);
+    setTimeout(() => restoreRenderer(), 500);
+
+    // Если контекст уже потерян — мягко перезагружаем страницу.
+    const gl = renderer.getContext();
+    if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) {
+      xrStatus.textContent = 'WebGL context was lost after XR. Reloading…';
+      setTimeout(() => window.location.reload(), 300);
+    }
   });
 
   // ============================================
@@ -1407,6 +1479,10 @@
   const posDisplay = document.getElementById('position-display');
 
   renderer.setAnimationLoop((timestamp, frame) => {
+    if (webglContextLost) return;
+    const gl = renderer.getContext();
+    if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) return;
+
     const delta = clock.getDelta();
 
     // FPS движение (только вне XR)
@@ -1475,6 +1551,7 @@
       const session = renderer.xr.getSession();
       const referenceSpace = arReferenceSpace || renderer.xr.getReferenceSpace();
       const arHintEl = document.getElementById('ar-hint');
+      let hasSurfacePose = false;
 
       // Не спамим promise-цепочки каждый кадр: повторяем только с паузой.
       if (session && !hitTestSource && !hitTestSourceRequested) {
@@ -1503,7 +1580,7 @@
                 hitTestSource = null;
                 arHitTestRetryAt = performance.now() + 1500;
                 arHitTestFailCount += 1;
-                if (arHitTestFailCount >= 3) arUseFallbackReticle = true;
+                arUseFallbackReticle = true;
                 if (arHintEl && !arModelPlaced) arHintEl.textContent = 'Searching for surface...';
                 console.warn('[AR] Hit-test setup failed:', err);
               })
@@ -1519,14 +1596,20 @@
         if (hitTestResults.length > 0) {
           const pose = hitTestResults[0].getPose(referenceSpace);
           if (pose) {
+            hasSurfacePose = true;
             arReticle.visible = true;
             arReticle.matrix.fromArray(pose.transform.matrix);
             arReticle.matrixWorldNeedsUpdate = true;
           }
-        } else {
-          arReticle.visible = false;
         }
-      } else if (arUseFallbackReticle) {
+      }
+
+      const shouldShowFallback =
+        !hasSurfacePose &&
+        !arModelPlaced &&
+        (arUseFallbackReticle || !hitTestSource || arHitTestFailCount > 0);
+
+      if (shouldShowFallback) {
         camera.getWorldDirection(_arFallbackDir);
         _arFallbackPos.copy(camera.position).addScaledVector(_arFallbackDir, 1.5);
         _arFallbackPos.y -= 0.6;
@@ -1536,7 +1619,7 @@
         arReticle.matrix.compose(_arFallbackPos, _arFallbackQuat, _arFallbackScale);
         arReticle.matrixWorldNeedsUpdate = true;
         arReticle.visible = true;
-      } else if (!arModelPlaced) {
+      } else if (!hasSurfacePose && !arModelPlaced) {
         arReticle.visible = false;
       }
     } else if (!renderer.xr.isPresenting) {
@@ -2268,9 +2351,7 @@
   // АДАПТИВНОСТЬ
   // ============================================
   window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (!renderer.xr.isPresenting) restoreRenderer();
   });
 </script>
 
