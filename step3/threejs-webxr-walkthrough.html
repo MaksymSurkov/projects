@@ -1566,7 +1566,7 @@
     // Если камера смотрит вдоль маршрута — скрол вниз = вперёд (+1)
     // Если камера развернута — скрол вниз = назад (-1)
     const aligned = fwd.dot(pathDir) >= 0;
-    const rawDir = e.deltaY > 0 ? 1 : -1;
+    const rawDir = e.deltaY > 0 ? -1 : 1;
     const dir = aligned ? rawDir : -rawDir;
 
     const next = currentWpIndex + dir;
