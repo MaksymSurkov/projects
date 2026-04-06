@@ -1548,23 +1548,55 @@
       return;
     }
 
-    // Floor hit
+    // Surface hit — пол ИЛИ стена
     renderer.domElement.style.cursor = 'default';
     const hits = navRaycaster.intersectObject(currentModel, true);
     navHitPoint = null;
     navReticle.visible = false;
 
+    const _up = new THREE.Vector3(0, 1, 0);
+
     for (const hit of hits) {
       if (!hit.face) continue;
-      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-      if (wn.y > 0.5) {
+      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
+
+      const isFloor = wn.y > 0.5;          // горизонтальная поверхность
+      const isWall  = Math.abs(wn.y) < 0.3; // вертикальная поверхность
+
+      if (!isFloor && !isWall) continue;
+
+      // Размещаем reticle чуть над поверхностью вдоль нормали
+      navReticle.position.copy(hit.point).addScaledVector(wn, 0.018);
+
+      // Поворачиваем reticle — его "верх" (+Y в локальных) совмещаем с нормалью
+      navReticle.quaternion.setFromUnitVectors(_up, wn);
+
+      navReticle.visible = true;
+      renderer.domElement.style.cursor = 'pointer';
+
+      if (isFloor) {
+        // Обычный пол — летим прямо сюда
         navHitPoint = hit.point.clone();
-        navReticle.position.copy(navHitPoint);
-        navReticle.position.y += 0.01;
-        navReticle.visible = true;
-        renderer.domElement.style.cursor = 'pointer';
-        break;
+      } else {
+        // Стена — находим пол под точкой попадания и летим к основанию стены
+        // Смещаем точку назад от стены на 0.5м чтобы не влипнуть
+        const base = hit.point.clone().addScaledVector(wn, 0.5);
+        // Кастуем луч вниз чтобы найти Y пола
+        const downRay = new THREE.Raycaster(
+          base.clone().setY(base.y + 0.5),
+          new THREE.Vector3(0, -1, 0)
+        );
+        const floorHits = downRay.intersectObject(currentModel, true);
+        let floorY = base.y;
+        for (const fh of floorHits) {
+          if (!fh.face) continue;
+          const fn = fh.face.normal.clone().transformDirection(fh.object.matrixWorld).normalize();
+          if (fn.y > 0.5) { floorY = fh.point.y; break; }
+        }
+        navHitPoint = new THREE.Vector3(base.x, floorY, base.z);
       }
+
+      break;
     }
   });
 
