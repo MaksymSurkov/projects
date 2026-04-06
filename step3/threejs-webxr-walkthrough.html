@@ -1245,15 +1245,26 @@
     renderer.shadowMap.enabled = true;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    if (currentModel) scene.add(currentModel);
+    if (currentModel) {
+      scene.add(currentModel);
+      // После удаления из сцены Three.js теряет привязку материалов — принудительно обновляем
+      currentModel.traverse(child => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(m => { m.needsUpdate = true; });
+        }
+      });
+    }
     scene.add(grid);
     scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
-    // Восстанавливаем позицию камеры — иначе белый экран после AR
-    camera.position.copy(_arSavedCamPos);
-    orbitControls.target.copy(_arSavedTarget);
-    orbitControls.update();
+    // Восстанавливаем позицию камеры в следующем кадре — после того как Three.js завершит XR-cleanup
+    requestAnimationFrame(() => {
+      camera.position.copy(_arSavedCamPos);
+      orbitControls.target.copy(_arSavedTarget);
+      orbitControls.update();
+    });
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
@@ -1395,6 +1406,7 @@
           if (pose) {
             arReticle.visible = true;
             arReticle.matrix.fromArray(pose.transform.matrix);
+            arReticle.matrixWorldNeedsUpdate = true;
           }
         } else {
           arReticle.visible = false;
