@@ -869,6 +869,7 @@
   let arModelPlaced = false;
   let _arSavedCamPos = new THREE.Vector3();
   let _arSavedTarget = new THREE.Vector3();
+  let _arRestoreCamera = false; // флаг: восстановить камеру в следующем кадре animation loop
   let arPlacedModel = null; // клон модели для AR
 
   const arReticle = new THREE.Mesh(
@@ -1279,12 +1280,9 @@
     scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
-    // Восстанавливаем камеру — через rAF, чтобы Three.js успел выйти из XR-режима
-    requestAnimationFrame(() => {
-      camera.position.copy(_arSavedCamPos);
-      orbitControls.target.copy(_arSavedTarget);
-      orbitControls.update();
-    });
+    // Восстанавливаем камеру через флаг — animation loop применит в первом же своём кадре,
+    // когда XR уже полностью завершён и camera снова под нашим контролем
+    _arRestoreCamera = true;
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
@@ -1341,6 +1339,14 @@
 
   renderer.setAnimationLoop((timestamp, frame) => {
     const delta = clock.getDelta();
+
+    // Восстановление камеры после AR — применяем в первом кадре вне XR
+    if (_arRestoreCamera && !renderer.xr.isPresenting) {
+      _arRestoreCamera = false;
+      camera.position.copy(_arSavedCamPos);
+      orbitControls.target.copy(_arSavedTarget);
+      orbitControls.update();
+    }
 
     // FPS движение (только вне XR)
     if (!renderer.xr.isPresenting) {
@@ -1431,6 +1437,8 @@
             arReticle.visible = true;
             arReticle.matrix.fromArray(pose.transform.matrix);
             arReticle.matrixWorldNeedsUpdate = true;
+            const arHintEl = document.getElementById('ar-hint');
+            if (arHintEl) arHintEl.style.display = 'none'; // скрываем подсказку когда кружок найден
           }
         } else {
           arReticle.visible = false;
