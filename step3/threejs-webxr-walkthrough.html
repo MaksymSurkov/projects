@@ -1551,14 +1551,31 @@
     if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
     if (scrollThrottle || navAnimating) return;
 
-    const dir = e.deltaY > 0 ? 1 : -1;
+    // Направление скролла зависит от того, куда смотрит камера
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    fwd.y = 0; fwd.normalize();
+
+    // Ось маршрута: от первого вейпоинта к последнему
+    const pathDir = new THREE.Vector3()
+      .subVectors(
+        presetWaypoints[presetWaypoints.length - 1].position,
+        presetWaypoints[0].position
+      ).normalize();
+
+    // Если камера смотрит вдоль маршрута — скрол вниз = вперёд (+1)
+    // Если камера развернута — скрол вниз = назад (-1)
+    const aligned = fwd.dot(pathDir) >= 0;
+    const rawDir = e.deltaY > 0 ? 1 : -1;
+    const dir = aligned ? rawDir : -rawDir;
+
     const next = currentWpIndex + dir;
     if (next < 0 || next >= presetWaypoints.length) return;
 
     scrollThrottle = true;
     currentWpIndex = next;
     flyTo(presetWaypoints[currentWpIndex].position);
-    // Release throttle only after animation finishes + 400ms to absorb trackpad momentum
+    // Сбрасываем блокировку только после окончания анимации + 400мс буфер для инерции тачпада
     onNavAnimEnd = () => {
       onNavAnimEnd = null;
       setTimeout(() => { scrollThrottle = false; }, 400);
