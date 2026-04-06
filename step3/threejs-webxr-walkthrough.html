@@ -1820,20 +1820,40 @@
   }
 
   function flyToHotspot(hs) {
-    // Отступаем от хотспота на 1.5м в сторону камеры (по XZ)
-    const dir = new THREE.Vector3()
-      .subVectors(camera.position, hs.position);
-    dir.y = 0;
-    if (dir.length() < 0.01) dir.set(1, 0, 0);
-    dir.normalize();
+    if (!currentModel) return;
 
-    // Камера встаёт в 1.5м перед хотспотом на уровне пола + рост
+    // Ищем открытую сторону от хотспота: кастуем 24 горизонтальных луча,
+    // выбираем направление с максимальным расстоянием до стены
+    const origin = hs.position.clone();
+    origin.y += 0.05;
+
+    const scanRay = new THREE.Raycaster();
+    scanRay.far = 30;
+
+    let bestDir = new THREE.Vector3(1, 0, 0);
+    let bestDist = -1;
+    const steps = 24;
+
+    for (let i = 0; i < steps; i++) {
+      const angle = (i / steps) * Math.PI * 2;
+      const dir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+      scanRay.set(origin, dir);
+      const hits = scanRay.intersectObject(currentModel, true);
+      const dist = hits.length > 0 ? hits[0].distance : scanRay.far;
+      if (dist > bestDist) {
+        bestDist = dist;
+        bestDir = dir.clone();
+      }
+    }
+
+    // Встаём в 1.5м от хотспота по открытой стороне
+    const standDist = Math.min(1.5, bestDist * 0.75);
     const destCam = new THREE.Vector3(
-      hs.position.x + dir.x * 1.5,
-      camera.position.y,        // сохраняем текущую высоту (уже на уровне пола)
-      hs.position.z + dir.z * 1.5
+      hs.position.x + bestDir.x * standDist,
+      camera.position.y,
+      hs.position.z + bestDir.z * standDist
     );
-    // Взгляд — прямо на хотспот
+    // Смотрим прямо на хотспот
     const destTarget = hs.position.clone();
 
     navAnimFrom.cam.copy(camera.position);
