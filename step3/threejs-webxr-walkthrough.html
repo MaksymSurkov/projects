@@ -590,7 +590,7 @@
   padding:10px 20px;
   border:1px solid rgba(255,255,255,0.2);
   pointer-events:none;
-  white-space:nowrap;
+  text-align:center;
 ">Move phone to scan floor · Tap to place</div>
 
 <div id="controls-panel">
@@ -1259,12 +1259,11 @@
     scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
-    // Восстанавливаем позицию камеры в следующем кадре — после того как Three.js завершит XR-cleanup
-    requestAnimationFrame(() => {
-      camera.position.copy(_arSavedCamPos);
-      orbitControls.target.copy(_arSavedTarget);
-      orbitControls.update();
-    });
+    // Восстанавливаем позицию камеры сразу и форсируем рендер — иначе белый экран
+    camera.position.copy(_arSavedCamPos);
+    orbitControls.target.copy(_arSavedTarget);
+    orbitControls.update();
+    renderer.render(scene, camera);
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
@@ -1392,7 +1391,7 @@
           return session.requestHitTestSource({ space: viewerSpace });
         }).then((source) => {
           hitTestSource = source;
-          if (arHintEl) arHintEl.textContent = 'Move phone to scan floor · Tap to place';
+          if (arHintEl) arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
         }).catch((err) => {
           hitTestSourceRequested = false;
           if (arHintEl) arHintEl.textContent = 'Hit-test error: ' + (err && err.message ? err.message : 'unknown');
