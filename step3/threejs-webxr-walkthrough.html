@@ -619,6 +619,9 @@
 <div id="controls-panel">
   <button class="btn active" onclick="setOrbitMode()">Orbit</button>
   <button class="btn" onclick="enterFPSMode()">Walk</button>
+  <button class="btn" onclick="toggleGrid()">Grid</button>
+  <button class="btn" onclick="toggleWireframe()">Wireframe</button>
+  <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
   <!-- <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button> -->
 </div>
@@ -693,12 +696,8 @@
   // ============================================
   // СЦЕНА, КАМЕРА, РЕНДЕРЕР
   // ============================================
-  const DEFAULT_BG = 0x0d0d14;
-  const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  const DEFAULT_PIXEL_RATIO = IS_MOBILE ? 1 : Math.min(window.devicePixelRatio, 2);
-  const AR_PIXEL_RATIO = IS_MOBILE ? 0.6 : 1;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(DEFAULT_BG, 0.03);
+  scene.fog = new THREE.FogExp2(0x0d0d14, 0.03);
 
   const camera = new THREE.PerspectiveCamera(
     65, window.innerWidth / window.innerHeight, 0.01, 500
@@ -707,14 +706,12 @@
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
-  renderer.setClearColor(DEFAULT_BG);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0d0d14);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  const DEFAULT_TONE_MAPPING = THREE.ACESFilmicToneMapping;
-  const DEFAULT_TONE_EXPOSURE = 1.2;
-  renderer.toneMapping = DEFAULT_TONE_MAPPING;
-  renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
-  renderer.shadowMap.enabled = !IS_MOBILE;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // ============================================
@@ -735,46 +732,6 @@
   let vrSupported = false;
   let arSupported = false;
   const xrStatus = document.getElementById('xr-status');
-  let xrRequestedMode = null; // 'ar' | 'vr' | null
-  let webglContextLost = false;
-  const CONTEXT_RECOVERY_TIMEOUT_MS = 1200;
-
-  // Android Chrome after AR can lose WebGL context / pause rendering.
-  renderer.domElement.addEventListener('webglcontextlost', (e) => {
-    e.preventDefault();
-    webglContextLost = true;
-    xrStatus.textContent = 'WebGL context lost… recovering';
-    setTimeout(() => {
-      const gl = renderer.getContext();
-      const stillLost = !!(gl && typeof gl.isContextLost === 'function' && gl.isContextLost());
-      if (stillLost && !renderer.xr.isPresenting) {
-        xrStatus.textContent = 'WebGL context lost. Reloading…';
-        window.location.reload();
-      }
-    }, CONTEXT_RECOVERY_TIMEOUT_MS);
-  });
-  renderer.domElement.addEventListener('webglcontextrestored', () => {
-    webglContextLost = false;
-    restoreRenderer();
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      setTimeout(() => {
-        if (!renderer.xr.isPresenting) {
-          restoreRenderer();
-          restartRenderLoop();
-        }
-      }, 60);
-    }
-  });
-  window.addEventListener('pageshow', () => {
-    setTimeout(() => {
-      if (!renderer.xr.isPresenting) {
-        restoreRenderer();
-        restartRenderLoop();
-      }
-    }, 60);
-  });
 
   async function setupXRButtons() {
     // Проверяем VR
@@ -792,7 +749,6 @@
     const vrButton = VRButton.createButton(renderer);
     vrButton.classList.add('xr-btn');
     document.body.appendChild(vrButton);
-    vrButton.addEventListener('click', () => { xrRequestedMode = 'vr'; });
 
     // AR кнопка — с hit-test для размещения модели
     // domOverlay позволяет показывать HTML-элементы поверх AR
@@ -803,7 +759,6 @@
     });
     arButton.classList.add('xr-btn');
     document.body.appendChild(arButton);
-    arButton.addEventListener('click', () => { xrRequestedMode = 'ar'; });
 
     // Обновляем статус
     const statuses = [];
@@ -914,57 +869,26 @@
   let arModelPlaced = false;
   let _arSavedCamPos = new THREE.Vector3();
   let _arSavedTarget = new THREE.Vector3();
-  let arPlacedModel = null; // размещённая в AR сущность (модель или демо-объект)
-  let xrSessionMode = 'none'; // 'none' | 'ar' | 'vr'
-  let arReferenceSpace = null;
-  let arHitTestRetryAt = 0;
-  let arHitTestFailCount = 0;
-  let arUseFallbackReticle = false;
-  const _arSavedModelPos = new THREE.Vector3();
-  const _arSavedModelQuat = new THREE.Quaternion();
-  const _arSavedModelScale = new THREE.Vector3(1, 1, 1);
-  let _arSavedModelVisible = true;
-  const _arSavedModelInvMatrix = new THREE.Matrix4();
-
-  function isARSession(session) {
-    if (!session) return false;
-    // Prefer explicit mode when available; fallback to blend mode for compatibility.
-    return session.mode === 'immersive-ar' || session.environmentBlendMode !== 'opaque';
-  }
+  let arPlacedModel = null; // клон модели для AR
 
   const arReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.1, 0.15, 32).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({
-      color: 0x4dabf7,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.95,
-      depthTest: false,
-      depthWrite: false
-    })
+    new THREE.MeshBasicMaterial({ color: 0x4dabf7, side: THREE.DoubleSide })
   );
   arReticle.matrixAutoUpdate = false;
-  arReticle.frustumCulled = false;
-  arReticle.renderOrder = 1000;
   arReticle.visible = false;
   scene.add(arReticle);
-  const _arFallbackDir = new THREE.Vector3();
-  const _arFallbackPos = new THREE.Vector3();
-  const _arFallbackQuat = new THREE.Quaternion();
-  const _arFallbackScale = new THREE.Vector3(1, 1, 1);
-  const _arFallbackEuler = new THREE.Euler();
 
   // AR-контроллер — реагирует на тап по экрану
   // Используем отдельный обработчик, который проверяет
   // находимся ли мы в AR-сессии
-  function onSelect(event) {
+  function onSelect() {
     const session = renderer.xr.getSession();
     if (!session) return;
 
-    if (isARSession(session)) {
+    // Определяем AR по наличию hit-test результатов
+    if (arReticle.visible) {
       onARSelect();
-    } else {
-      onVRSelect(event);
     }
   }
 
@@ -978,13 +902,23 @@
     console.log('[AR] onARSelect called, placing at', pos);
 
     if (!arPlacedModel) {
-      if (currentModel) {
-        // Используем исходную модель (без clone), чтобы не дублировать нагрузку на GPU в AR.
-        arPlacedModel = currentModel;
-        arPlacedModel.visible = true;
-      } else {
-        const wrapper = new THREE.Group();
+      const wrapper = new THREE.Group();
 
+      if (currentModel) {
+        const cloned = currentModel.clone();
+        cloned.visible = true; // clone() copies visible=false from hidden original
+
+        // Center: shift so floor is at y=0, centered on x/z
+        const box = new THREE.Box3().setFromObject(cloned);
+        const center = box.getCenter(new THREE.Vector3());
+        cloned.position.set(-center.x, -box.min.y, -center.z);
+
+        // Real scale — no miniature. The room floor goes to the tapped point,
+        // the phone camera (~1.7m high) ends up inside the room.
+        // wrapper.scale stays at 1 (default)
+
+        wrapper.add(cloned);
+      } else {
         // Нет модели — показываем яркий демо-домик (MeshBasicMaterial — виден без освещения)
         const base = new THREE.Mesh(
           new THREE.BoxGeometry(0.3, 0.2, 0.3),
@@ -1002,9 +936,10 @@
         wrapper.add(roof);
 
         console.log('[AR] Demo house created (no model loaded)');
-        arPlacedModel = wrapper;
-        scene.add(arPlacedModel);
       }
+
+      arPlacedModel = wrapper;
+      scene.add(arPlacedModel);
     }
 
     // Позиция из reticle
@@ -1046,43 +981,6 @@
   const velocity = new THREE.Vector3();
   const direction = new THREE.Vector3();
 
-  function restoreRenderer() {
-    if (renderer.xr.isPresenting) return;
-    const gl = renderer.getContext();
-    if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) return;
-    webglContextLost = false;
-
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h, false);
-    renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
-    renderer.setClearColor(DEFAULT_BG, 1);
-    renderer.toneMapping = DEFAULT_TONE_MAPPING;
-    renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
-    if (scene.fog) {
-      scene.fog.density = 0.03;
-      scene.fog.color.setHex(DEFAULT_BG);
-    }
-    renderer.resetState();
-    renderer.clear(true, true, true);
-    orbitControls.update();
-    renderer.render(scene, camera);
-  }
-
-  function restartRenderLoop() {
-    if (renderer.xr.isPresenting) return;
-    renderer.setAnimationLoop(null);
-    renderer.setAnimationLoop(animationLoop);
-  }
-
-  function logContextState(tag) {
-    const gl = renderer.getContext();
-    const lost = !!(gl && typeof gl.isContextLost === 'function' && gl.isContextLost());
-    console.log(`[WebGL] ${tag} contextLost=${lost}`);
-  }
-
   // ============================================
   // ОСВЕЩЕНИЕ
   // ============================================
@@ -1105,6 +1003,12 @@
   fillLight.position.set(-5, 3, -5);
   scene.add(fillLight);
 
+  // ============================================
+  // СЕТКА
+  // ============================================
+  const grid = new THREE.GridHelper(30, 60, 0x1a1a2e, 0x141422);
+  scene.add(grid);
+
   const shadowFloor = new THREE.Mesh(
     new THREE.PlaneGeometry(30, 30),
     new THREE.ShadowMaterial({ opacity: 0.3 })
@@ -1123,6 +1027,7 @@
   gltfLoader.setDRACOLoader(dracoLoader);
 
   let currentModel = null;
+  let isWireframe = false;
 
   function loadModelFromFile(file) {
     document.getElementById('loading').classList.add('active');
@@ -1183,7 +1088,6 @@
       (error) => {
         console.error('Load error:', error);
         document.getElementById('loading').classList.remove('active');
-        URL.revokeObjectURL(url);
         alert('Failed to load model. Check file format (.glb / .gltf)');
       }
     );
@@ -1305,27 +1209,17 @@
   renderer.xr.addEventListener('sessionstart', () => {
     const session = renderer.xr.getSession();
     if (!session) return;
-    logContextState('sessionstart');
-    const detectedMode = isARSession(session) ? 'ar' : 'vr';
-    xrSessionMode = xrRequestedMode || detectedMode;
-    xrRequestedMode = null;
-    const isAR = xrSessionMode === 'ar';
 
     // Transparent background for AR camera feed
-    if (isAR) {
+    if (session.environmentBlendMode !== 'opaque') {
       renderer.setClearColor(0x000000, 0);
-    } else {
-      renderer.setClearColor(DEFAULT_BG, 1);
     }
-    renderer.toneMapping = isAR ? THREE.NoToneMapping : DEFAULT_TONE_MAPPING;
-    renderer.toneMappingExposure = isAR ? 1.0 : DEFAULT_TONE_EXPOSURE;
 
     // Hide UI
     document.getElementById('controls-panel').style.display = 'none';
     document.getElementById('hud-top').style.opacity = '0';
     document.getElementById('mode-indicator').textContent = 'XR Mode';
-    document.getElementById('ar-hint').style.display = isAR ? 'block' : 'none';
-    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('ar-hint').style.display = 'block';
 
     // Сохраняем позицию камеры — восстановим после выхода из AR
     _arSavedCamPos.copy(camera.position);
@@ -1333,147 +1227,80 @@
 
     // Scene adjustments
     if (scene.fog) scene.fog.density = 0;
-    shadowFloor.visible = false;
+    scene.remove(grid);
+    scene.remove(shadowFloor);
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
     navReticle.visible = false;
     orbitControls.enabled = false;
     presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
-    // Отключаем тени и снижаем pixel ratio в AR для стабильности.
+    // Отключаем тени и снижаем pixel ratio
     renderer.shadowMap.enabled = false;
-    renderer.setPixelRatio(isAR ? AR_PIXEL_RATIO : DEFAULT_PIXEL_RATIO);
+    renderer.setPixelRatio(1);
 
-    if (isAR) {
-      lastArHotspotUpdate = 0;
-      // В AR временно скрываем модель до первого размещения.
-      if (currentModel) {
-        currentModel.updateMatrixWorld(true);
-        _arSavedModelPos.copy(currentModel.position);
-        _arSavedModelQuat.copy(currentModel.quaternion);
-        _arSavedModelScale.copy(currentModel.scale);
-        _arSavedModelVisible = currentModel.visible;
-        _arSavedModelInvMatrix.copy(currentModel.matrixWorld).invert();
-        currentModel.visible = false;
-      }
-
-      // Сбрасываем размещение AR-сеанса, чтобы повторные входы начинались
-      // с чистого состояния даже после зависшего/аварийного выхода.
-      if (arPlacedModel && arPlacedModel !== currentModel) {
-        scene.remove(arPlacedModel);
-      }
-      arPlacedModel = null;
-      arModelPlaced = false;
-
-      // Сбрасываем AR hit-test state
-      if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
-      hitTestSource = null;
-      hitTestSourceRequested = false;
-      arHitTestRetryAt = 0;
-      arHitTestFailCount = 0;
-      arUseFallbackReticle = false;
-      arReferenceSpace = null;
-      arReticle.visible = false;
-
-      session.requestReferenceSpace('local-floor')
-        .catch(() => session.requestReferenceSpace('local'))
-        .then((space) => { arReferenceSpace = space; })
-        .catch(() => { arReferenceSpace = null; });
-    }
+    // Убираем модель из сцены — Three.js не будет её рендерить и обходить каждый кадр.
+    // dispose() не делаем — геометрии нужны чтобы восстановить модель при sessionend.
+    if (currentModel) scene.remove(currentModel);
 
     // BUG FIX: listener добавляется к session-объекту, который живёт ровно одну сессию —
     // нет риска накопления, так как session — новый объект при каждом входе в AR.
-    if (isAR) {
-      session.addEventListener('select', () => {
-        if (arReticle.visible) onARSelect();
-      });
-    }
+    session.addEventListener('select', () => {
+      if (arReticle.visible) onARSelect();
+    });
     // Очищаем hit-test когда сессия завершается изнутри
     session.addEventListener('end', () => {
-      if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
       hitTestSource = null;
       hitTestSourceRequested = false;
-      arReferenceSpace = null;
-      arHitTestRetryAt = 0;
-      arHitTestFailCount = 0;
-      arUseFallbackReticle = false;
     });
   });
 
   renderer.xr.addEventListener('sessionend', () => {
-    logContextState('sessionend');
-    webglContextLost = false;
-    lastArHotspotUpdate = 0;
-    xrSessionMode = 'none';
-    xrRequestedMode = null;
-    renderer.setClearColor(DEFAULT_BG, 1);
+    renderer.setClearColor(0x0d0d14, 1);
 
     document.getElementById('controls-panel').style.display = 'flex';
     document.getElementById('hud-top').style.opacity = '1';
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
     document.getElementById('ar-hint').style.display = 'none';
-    document.getElementById('start-screen').classList.add('hidden');
 
-    if (scene.fog) {
-      scene.fog.density = 0.03;
-      scene.fog.color.setHex(DEFAULT_BG);
-    }
-    renderer.toneMapping = DEFAULT_TONE_MAPPING;
-    renderer.toneMappingExposure = DEFAULT_TONE_EXPOSURE;
+    if (scene.fog) scene.fog.density = 0.03;
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
     orbitControls.enabled = true;
 
-    // Восстанавливаем качество после XR
-    renderer.setPixelRatio(DEFAULT_PIXEL_RATIO);
-    renderer.shadowMap.enabled = !IS_MOBILE;
+    // pixel ratio восстанавливаем сразу, тени — через паузу.
+    // Если включить тени немедленно, Three.js попытается перерендерить shadow map
+    // для ВСЕЙ сцены в первом же кадре → загрузка всех материалов сразу → context loss → "Aw Snap"
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = false; // включим позже
 
-    if (currentModel) {
-      currentModel.position.copy(_arSavedModelPos);
-      currentModel.quaternion.copy(_arSavedModelQuat);
-      currentModel.scale.copy(_arSavedModelScale);
-      // Форсируем возврат видимости, чтобы после AR не остаться с пустым экраном.
-      currentModel.visible = true;
-      currentModel.updateMatrixWorld(true);
-    }
-    shadowFloor.visible = true;
+    if (currentModel) scene.add(currentModel);
+    scene.add(grid);
+    scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
-    // Восстанавливаем позицию камеры
-    camera.position.copy(_arSavedCamPos);
-    orbitControls.target.copy(_arSavedTarget);
-    orbitControls.update();
+    // Восстанавливаем камеру — через rAF, чтобы Three.js успел выйти из XR-режима
+    requestAnimationFrame(() => {
+      camera.position.copy(_arSavedCamPos);
+      orbitControls.target.copy(_arSavedTarget);
+      orbitControls.update();
+    });
 
-    if (arPlacedModel && arPlacedModel !== currentModel) {
+    if (arPlacedModel) {
       scene.remove(arPlacedModel);
+      arPlacedModel = null;
+      arModelPlaced = false;
     }
-    arPlacedModel = null;
-    arModelPlaced = false;
 
-    if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
     hitTestSource = null;
     hitTestSourceRequested = false;
-    arReferenceSpace = null;
-    arHitTestRetryAt = 0;
-    arHitTestFailCount = 0;
-    arUseFallbackReticle = false;
     arReticle.visible = false;
     currentMode = 'orbit';
-    setOrbitMode();
     // Убираем AR-стиль с хотспотов
     infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
 
-    // Жёсткое восстановление рендера после выхода из AR/VR.
-    setTimeout(() => { restoreRenderer(); restartRenderLoop(); }, 0);
-    setTimeout(() => { restoreRenderer(); restartRenderLoop(); }, 120);
-    setTimeout(() => { restoreRenderer(); restartRenderLoop(); }, 500);
-
-    // Если контекст уже потерян — мягко перезагружаем страницу.
-    const gl = renderer.getContext();
-    if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) {
-      xrStatus.textContent = 'WebGL context was lost after XR. Reloading…';
-      setTimeout(() => window.location.reload(), 300);
-    }
+    // Включаем тени через 2с — к тому времени модель уже перезалита в GPU
+    setTimeout(() => { renderer.shadowMap.enabled = true; }, 2000);
   });
 
   // ============================================
@@ -1511,20 +1338,8 @@
   // ============================================
   const clock = new THREE.Clock();
   const posDisplay = document.getElementById('position-display');
-  let lastArHotspotUpdate = 0;
-  const AR_HOTSPOT_UPDATE_MS = 100;
 
-  function animationLoop(timestamp, frame) {
-    const gl = renderer.getContext();
-    if (webglContextLost) {
-      if (gl && typeof gl.isContextLost === 'function' && !gl.isContextLost()) {
-        webglContextLost = false;
-      } else if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) {
-        return;
-      }
-    }
-    if (gl && typeof gl.isContextLost === 'function' && gl.isContextLost()) return;
-
+  renderer.setAnimationLoop((timestamp, frame) => {
     const delta = clock.getDelta();
 
     // FPS движение (только вне XR)
@@ -1589,48 +1404,23 @@
     }
 
     // AR hit-test — запрашиваем source на первом кадре (официальный паттерн Three.js)
-    if (frame && xrSessionMode === 'ar') {
+    if (frame) {
       const session = renderer.xr.getSession();
-      const referenceSpace = arReferenceSpace || renderer.xr.getReferenceSpace();
-      const arHintEl = document.getElementById('ar-hint');
-      let hasSurfacePose = false;
+      const referenceSpace = renderer.xr.getReferenceSpace();
 
-      // Не спамим promise-цепочки каждый кадр: повторяем только с паузой.
-      if (session && !hitTestSource && !hitTestSourceRequested) {
-        const now = performance.now();
-        if (now >= arHitTestRetryAt) {
-          if (typeof session.requestHitTestSource !== 'function') {
-            arHitTestRetryAt = Number.POSITIVE_INFINITY;
-            arUseFallbackReticle = true;
-            if (arHintEl) arHintEl.textContent = 'Hit-test is not available on this device/browser';
-          } else {
-            hitTestSourceRequested = true;
-            if (arHintEl && !arModelPlaced) arHintEl.textContent = 'Initializing tracking...';
-
-            session.requestReferenceSpace('viewer')
-              .then((viewerSpace) => session.requestHitTestSource({ space: viewerSpace }))
-              .then((source) => {
-                hitTestSource = source;
-                arHitTestRetryAt = 0;
-                arHitTestFailCount = 0;
-                arUseFallbackReticle = false;
-                if (arHintEl && !arModelPlaced) {
-                  arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
-                }
-              })
-              .catch((err) => {
-                hitTestSource = null;
-                arHitTestRetryAt = performance.now() + 1500;
-                arHitTestFailCount += 1;
-                arUseFallbackReticle = true;
-                if (arHintEl && !arModelPlaced) arHintEl.textContent = 'Searching for surface...';
-                console.warn('[AR] Hit-test setup failed:', err);
-              })
-              .finally(() => {
-                hitTestSourceRequested = false;
-              });
-          }
-        }
+      if (!hitTestSourceRequested && session) {
+        hitTestSourceRequested = true;
+        const arHintEl = document.getElementById('ar-hint');
+        if (arHintEl) arHintEl.textContent = 'Initializing tracking...';
+        session.requestReferenceSpace('viewer').then((viewerSpace) => {
+          return session.requestHitTestSource({ space: viewerSpace });
+        }).then((source) => {
+          hitTestSource = source;
+          if (arHintEl) arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
+        }).catch((err) => {
+          hitTestSourceRequested = false;
+          if (arHintEl) arHintEl.textContent = 'Hit-test error: ' + (err && err.message ? err.message : 'unknown');
+        });
       }
 
       if (hitTestSource && referenceSpace) {
@@ -1638,33 +1428,14 @@
         if (hitTestResults.length > 0) {
           const pose = hitTestResults[0].getPose(referenceSpace);
           if (pose) {
-            hasSurfacePose = true;
             arReticle.visible = true;
             arReticle.matrix.fromArray(pose.transform.matrix);
             arReticle.matrixWorldNeedsUpdate = true;
           }
+        } else {
+          arReticle.visible = false;
         }
       }
-
-      const shouldShowFallback =
-        !hasSurfacePose &&
-        !arModelPlaced;
-
-      if (shouldShowFallback) {
-        camera.getWorldDirection(_arFallbackDir);
-        _arFallbackPos.copy(camera.position).addScaledVector(_arFallbackDir, 1.5);
-        _arFallbackPos.y -= 0.6;
-        const yaw = Math.atan2(_arFallbackDir.x, _arFallbackDir.z);
-        _arFallbackEuler.set(-Math.PI / 2, yaw, 0, 'YXZ');
-        _arFallbackQuat.setFromEuler(_arFallbackEuler);
-        arReticle.matrix.compose(_arFallbackPos, _arFallbackQuat, _arFallbackScale);
-        arReticle.matrixWorldNeedsUpdate = true;
-        arReticle.visible = true;
-      } else if (!hasSurfacePose && !arModelPlaced) {
-        arReticle.visible = false;
-      }
-    } else if (!renderer.xr.isPresenting) {
-      arReticle.visible = false;
     }
 
     // Позиция
@@ -1679,19 +1450,10 @@
     constrainCamera();
 
     // Info hotspots — проекция 3D → 2D
-    if (renderer.xr.isPresenting && xrSessionMode === 'ar') {
-      if (!arModelPlaced || (timestamp - lastArHotspotUpdate) >= AR_HOTSPOT_UPDATE_MS) {
-        updateInfoHotspots();
-        lastArHotspotUpdate = timestamp;
-      }
-    } else {
-      updateInfoHotspots();
-    }
+    updateInfoHotspots();
 
     renderer.render(scene, camera);
-  }
-
-  renderer.setAnimationLoop(animationLoop);
+  });
 
   // ============================================
   // MATTERPORT-STYLE NAVIGATION
@@ -2169,14 +1931,13 @@
   }
 
   const _occlusionRay = new THREE.Raycaster();
-  const _occlusionRayBack = new THREE.Raycaster();
   const _hsWorldPos = new THREE.Vector3();
   const _hsScreenV  = new THREE.Vector3();
 
   function updateInfoHotspots() {
     // ── AR режим: модель убрана из сцены, но arPlacedModel может быть размещён ──
     if (renderer.xr.isPresenting) {
-      if (arPlacedModel) {
+      if (arPlacedModel && arPlacedModel.children.length > 0) {
         _updateHotspotsAR();
       } else {
         infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
@@ -2194,20 +1955,14 @@
 
     for (const hs of infoHotspots) {
       _hsScreenV.copy(hs.position).project(camera);
-      if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+      if (_hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
 
       // Окклюзия
       const toHs = new THREE.Vector3().subVectors(hs.position, camPos);
       const dist = toHs.length();
-      if (dist < 0.08) { hs.el.style.display = 'none'; continue; }
       _occlusionRay.set(camPos, toHs.normalize());
       _occlusionRay.far = dist - 0.08;
-      _occlusionRayBack.set(hs.position, toHs.clone().negate());
-      _occlusionRayBack.far = dist - 0.08;
-      if (
-        _occlusionRay.intersectObject(currentModel, true).length > 0 ||
-        _occlusionRayBack.intersectObject(currentModel, true).length > 0
-      ) {
+      if (_occlusionRay.intersectObject(currentModel, true).length > 0) {
         hs.el.style.display = 'none'; continue;
       }
 
@@ -2221,43 +1976,26 @@
   }
 
   function _updateHotspotsAR() {
-    // Вариант 1: в AR используется исходная модель (без clone)
-    if (arPlacedModel === currentModel && currentModel) {
-      currentModel.updateMatrixWorld(true);
-      for (const hs of infoHotspots) {
-        // hs.position задан в мировых координатах "обычного" режима.
-        // Переводим в local исходной модели, затем в новую AR-позу модели.
-        _hsWorldPos.copy(hs.position)
-          .applyMatrix4(_arSavedModelInvMatrix)
-          .applyMatrix4(currentModel.matrixWorld);
-
-        _hsScreenV.copy(_hsWorldPos).project(camera);
-        if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
-
-        const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-_hsScreenV.y * 0.5 + 0.5) * window.innerHeight;
-        hs.el.style.left = x + 'px';
-        hs.el.style.top  = y + 'px';
-        hs.el.classList.add('ar-mode');
-        hs.el.style.display = 'flex';
-      }
-      return;
-    }
-
-    // Вариант 2: fallback-объект (демо-домик)
-    if (!arPlacedModel.children || arPlacedModel.children.length === 0) {
-      infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
-      return;
-    }
+    // arPlacedModel содержит клон галереи с offset'ом центрирования
     const clonedChild = arPlacedModel.children[0];
+    // Убеждаемся что матрицы актуальны
     arPlacedModel.updateMatrixWorld(true);
 
+    const camPos = new THREE.Vector3();
+    camera.getWorldPosition(camPos);
+
     for (const hs of infoHotspots) {
+      // Трансформируем: позиция хотспота (в пространстве оригинальной галереи)
+      // → пространство клона (добавляем offset центрирования)
+      // → мировое пространство AR (через матрицу wrapper'а)
       _hsWorldPos.copy(hs.position).add(clonedChild.position);
       arPlacedModel.localToWorld(_hsWorldPos);
 
+      // Проецируем через AR-камеру
       _hsScreenV.copy(_hsWorldPos).project(camera);
-      if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+
+      // За спиной камеры или вне экрана — скрыть
+      if (_hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
 
       const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-_hsScreenV.y * 0.5 + 0.5) * window.innerHeight;
@@ -2378,6 +2116,28 @@
   addInfoHotspot(new THREE.Vector3(-20.926, 1.538, -0.026), 'Ball');
 
   // ============================================
+  // UI
+  // ============================================
+  let gridVisible = true;
+  window.toggleGrid = () => { gridVisible = !gridVisible; grid.visible = gridVisible; };
+  window.toggleWireframe = () => {
+    isWireframe = !isWireframe;
+    if (currentModel) {
+      currentModel.traverse((child) => {
+        if (child.isMesh && child.material) child.material.wireframe = isWireframe;
+      });
+    }
+  };
+
+  const backgrounds = [0x0d0d14, 0x1a1a2e, 0x2d2d3f, 0x111111, 0xf5f5f0];
+  let bgIndex = 0;
+  window.cycleBackground = () => {
+    bgIndex = (bgIndex + 1) % backgrounds.length;
+    renderer.setClearColor(backgrounds[bgIndex]);
+    scene.fog.color.setHex(backgrounds[bgIndex]);
+  };
+
+  // ============================================
   // DRAG & DROP
   // ============================================
   const dropzone = document.getElementById('dropzone');
@@ -2401,7 +2161,9 @@
   // АДАПТИВНОСТЬ
   // ============================================
   window.addEventListener('resize', () => {
-    if (!renderer.xr.isPresenting) restoreRenderer();
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   });
 </script>
 
