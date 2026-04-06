@@ -619,9 +619,6 @@
 <div id="controls-panel">
   <button class="btn active" onclick="setOrbitMode()">Orbit</button>
   <button class="btn" onclick="enterFPSMode()">Walk</button>
-  <button class="btn" onclick="toggleGrid()">Grid</button>
-  <button class="btn" onclick="toggleWireframe()">Wireframe</button>
-  <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
   <!-- <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button> -->
 </div>
@@ -696,8 +693,9 @@
   // ============================================
   // СЦЕНА, КАМЕРА, РЕНДЕРЕР
   // ============================================
+  const DEFAULT_BG = 0x0d0d14;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0d0d14, 0.03);
+  scene.fog = new THREE.FogExp2(DEFAULT_BG, 0.03);
 
   const camera = new THREE.PerspectiveCamera(
     65, window.innerWidth / window.innerHeight, 0.01, 500
@@ -707,7 +705,7 @@
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x0d0d14);
+  renderer.setClearColor(DEFAULT_BG);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
@@ -872,12 +870,17 @@
   let arModelPlaced = false;
   let _arSavedCamPos = new THREE.Vector3();
   let _arSavedTarget = new THREE.Vector3();
-  let arPlacedModel = null; // клон модели для AR
+  let arPlacedModel = null; // размещённая в AR сущность (модель или демо-объект)
   let xrSessionMode = 'none'; // 'none' | 'ar' | 'vr'
   let arReferenceSpace = null;
   let arHitTestRetryAt = 0;
   let arHitTestFailCount = 0;
   let arUseFallbackReticle = false;
+  const _arSavedModelPos = new THREE.Vector3();
+  const _arSavedModelQuat = new THREE.Quaternion();
+  const _arSavedModelScale = new THREE.Vector3(1, 1, 1);
+  let _arSavedModelVisible = true;
+  const _arSavedModelInvMatrix = new THREE.Matrix4();
 
   function isARSession(session) {
     if (!session) return false;
@@ -931,23 +934,13 @@
     console.log('[AR] onARSelect called, placing at', pos);
 
     if (!arPlacedModel) {
-      const wrapper = new THREE.Group();
-
       if (currentModel) {
-        const cloned = currentModel.clone();
-        cloned.visible = true; // clone() copies visible=false from hidden original
-
-        // Center: shift so floor is at y=0, centered on x/z
-        const box = new THREE.Box3().setFromObject(cloned);
-        const center = box.getCenter(new THREE.Vector3());
-        cloned.position.set(-center.x, -box.min.y, -center.z);
-
-        // Real scale — no miniature. The room floor goes to the tapped point,
-        // the phone camera (~1.7m high) ends up inside the room.
-        // wrapper.scale stays at 1 (default)
-
-        wrapper.add(cloned);
+        // Используем исходную модель (без clone), чтобы не дублировать нагрузку на GPU в AR.
+        arPlacedModel = currentModel;
+        arPlacedModel.visible = true;
       } else {
+        const wrapper = new THREE.Group();
+
         // Нет модели — показываем яркий демо-домик (MeshBasicMaterial — виден без освещения)
         const base = new THREE.Mesh(
           new THREE.BoxGeometry(0.3, 0.2, 0.3),
@@ -965,10 +958,9 @@
         wrapper.add(roof);
 
         console.log('[AR] Demo house created (no model loaded)');
+        arPlacedModel = wrapper;
+        scene.add(arPlacedModel);
       }
-
-      arPlacedModel = wrapper;
-      scene.add(arPlacedModel);
     }
 
     // Позиция из reticle
@@ -1032,12 +1024,6 @@
   fillLight.position.set(-5, 3, -5);
   scene.add(fillLight);
 
-  // ============================================
-  // СЕТКА
-  // ============================================
-  const grid = new THREE.GridHelper(30, 60, 0x1a1a2e, 0x141422);
-  scene.add(grid);
-
   const shadowFloor = new THREE.Mesh(
     new THREE.PlaneGeometry(30, 30),
     new THREE.ShadowMaterial({ opacity: 0.3 })
@@ -1056,44 +1042,6 @@
   gltfLoader.setDRACOLoader(dracoLoader);
 
   let currentModel = null;
-  let isWireframe = false;
-  const MODEL_TEXTURE_KEYS = ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','lightMap','envMap','alphaMap','bumpMap','displacementMap'];
-
-  function releaseModelGpuForAR(model) {
-    if (!model) return;
-    const disposedTextures = new Set();
-    model.traverse((child) => {
-      if (!child.isMesh) return;
-      if (child.geometry) child.geometry.dispose();
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat) => {
-        if (!mat) return;
-        for (const key of MODEL_TEXTURE_KEYS) {
-          const tex = mat[key];
-          if (tex && tex.isTexture && !disposedTextures.has(tex)) {
-            disposedTextures.add(tex);
-            tex.dispose();
-          }
-        }
-      });
-    });
-  }
-
-  function restoreModelGpuAfterAR(model) {
-    if (!model) return;
-    model.traverse((child) => {
-      if (!child.isMesh) return;
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat) => {
-        if (!mat) return;
-        for (const key of MODEL_TEXTURE_KEYS) {
-          const tex = mat[key];
-          if (tex && tex.isTexture) tex.needsUpdate = true;
-        }
-        mat.needsUpdate = true;
-      });
-    });
-  }
 
   function loadModelFromFile(file) {
     document.getElementById('loading').classList.add('active');
@@ -1285,7 +1233,7 @@
     if (isAR) {
       renderer.setClearColor(0x000000, 0);
     } else {
-      renderer.setClearColor(backgrounds[bgIndex], 1);
+      renderer.setClearColor(DEFAULT_BG, 1);
     }
 
     // Hide UI
@@ -1294,7 +1242,6 @@
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = isAR ? 'block' : 'none';
     document.getElementById('start-screen').classList.add('hidden');
-    hotspotsContainer.style.display = 'none';
 
     // Сохраняем позицию камеры — восстановим после выхода из AR
     _arSavedCamPos.copy(camera.position);
@@ -1302,7 +1249,6 @@
 
     // Scene adjustments
     if (scene.fog) scene.fog.density = 0;
-    grid.visible = false;
     shadowFloor.visible = false;
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
@@ -1315,10 +1261,15 @@
     renderer.setPixelRatio(1);
 
     if (isAR) {
-      // В AR прячем исходную модель, показываем только клон после тапа.
+      // В AR временно скрываем модель до первого размещения.
       if (currentModel) {
+        currentModel.updateMatrixWorld(true);
+        _arSavedModelPos.copy(currentModel.position);
+        _arSavedModelQuat.copy(currentModel.quaternion);
+        _arSavedModelScale.copy(currentModel.scale);
+        _arSavedModelVisible = currentModel.visible;
+        _arSavedModelInvMatrix.copy(currentModel.matrixWorld).invert();
         currentModel.visible = false;
-        releaseModelGpuForAR(currentModel);
       }
 
       // Сбрасываем AR hit-test state
@@ -1359,18 +1310,17 @@
   renderer.xr.addEventListener('sessionend', () => {
     xrSessionMode = 'none';
     xrRequestedMode = null;
-    renderer.setClearColor(backgrounds[bgIndex], 1);
+    renderer.setClearColor(DEFAULT_BG, 1);
 
     document.getElementById('controls-panel').style.display = 'flex';
     document.getElementById('hud-top').style.opacity = '1';
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
     document.getElementById('ar-hint').style.display = 'none';
     document.getElementById('start-screen').classList.add('hidden');
-    hotspotsContainer.style.display = 'block';
 
     if (scene.fog) {
       scene.fog.density = 0.03;
-      scene.fog.color.setHex(backgrounds[bgIndex]);
+      scene.fog.color.setHex(DEFAULT_BG);
     }
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
@@ -1381,10 +1331,12 @@
     renderer.shadowMap.enabled = false; // включим позже
 
     if (currentModel) {
-      currentModel.visible = true;
-      restoreModelGpuAfterAR(currentModel);
+      currentModel.position.copy(_arSavedModelPos);
+      currentModel.quaternion.copy(_arSavedModelQuat);
+      currentModel.scale.copy(_arSavedModelScale);
+      currentModel.visible = _arSavedModelVisible;
+      currentModel.updateMatrixWorld(true);
     }
-    grid.visible = gridVisible;
     shadowFloor.visible = true;
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
 
@@ -1393,11 +1345,11 @@
     orbitControls.target.copy(_arSavedTarget);
     orbitControls.update();
 
-    if (arPlacedModel) {
+    if (arPlacedModel && arPlacedModel !== currentModel) {
       scene.remove(arPlacedModel);
-      arPlacedModel = null;
-      arModelPlaced = false;
     }
+    arPlacedModel = null;
+    arModelPlaced = false;
 
     if (hitTestSource && typeof hitTestSource.cancel === 'function') hitTestSource.cancel();
     hitTestSource = null;
@@ -1603,9 +1555,7 @@
     constrainCamera();
 
     // Info hotspots — проекция 3D → 2D
-    if (xrSessionMode !== 'ar') {
-      updateInfoHotspots();
-    }
+    updateInfoHotspots();
 
     renderer.render(scene, camera);
   });
@@ -2093,7 +2043,7 @@
   function updateInfoHotspots() {
     // ── AR режим: модель убрана из сцены, но arPlacedModel может быть размещён ──
     if (renderer.xr.isPresenting) {
-      if (arPlacedModel && arPlacedModel.children.length > 0) {
+      if (arPlacedModel) {
         _updateHotspotsAR();
       } else {
         infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
@@ -2138,25 +2088,42 @@
   }
 
   function _updateHotspotsAR() {
-    // arPlacedModel содержит клон галереи с offset'ом центрирования
+    // Вариант 1: в AR используется исходная модель (без clone)
+    if (arPlacedModel === currentModel && currentModel) {
+      currentModel.updateMatrixWorld(true);
+      for (const hs of infoHotspots) {
+        // hs.position задан в мировых координатах "обычного" режима.
+        // Переводим в local исходной модели, затем в новую AR-позу модели.
+        _hsWorldPos.copy(hs.position)
+          .applyMatrix4(_arSavedModelInvMatrix)
+          .applyMatrix4(currentModel.matrixWorld);
+
+        _hsScreenV.copy(_hsWorldPos).project(camera);
+        if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+
+        const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-_hsScreenV.y * 0.5 + 0.5) * window.innerHeight;
+        hs.el.style.left = x + 'px';
+        hs.el.style.top  = y + 'px';
+        hs.el.classList.add('ar-mode');
+        hs.el.style.display = 'flex';
+      }
+      return;
+    }
+
+    // Вариант 2: fallback-объект (демо-домик)
+    if (!arPlacedModel.children || arPlacedModel.children.length === 0) {
+      infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
+      return;
+    }
     const clonedChild = arPlacedModel.children[0];
-    // Убеждаемся что матрицы актуальны
     arPlacedModel.updateMatrixWorld(true);
 
-    const camPos = new THREE.Vector3();
-    camera.getWorldPosition(camPos);
-
     for (const hs of infoHotspots) {
-      // Трансформируем: позиция хотспота (в пространстве оригинальной галереи)
-      // → пространство клона (добавляем offset центрирования)
-      // → мировое пространство AR (через матрицу wrapper'а)
       _hsWorldPos.copy(hs.position).add(clonedChild.position);
       arPlacedModel.localToWorld(_hsWorldPos);
 
-      // Проецируем через AR-камеру
       _hsScreenV.copy(_hsWorldPos).project(camera);
-
-      // За спиной камеры или вне экрана — скрыть
       if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
 
       const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
@@ -2276,31 +2243,6 @@
   addInfoHotspot(new THREE.Vector3(-14.604, 1.968, -0.956), 'Car');
   addInfoHotspot(new THREE.Vector3(-14.310, 2.081,  0.767), 'Boat');
   addInfoHotspot(new THREE.Vector3(-20.926, 1.538, -0.026), 'Ball');
-
-  // ============================================
-  // UI
-  // ============================================
-  let gridVisible = true;
-  window.toggleGrid = () => { gridVisible = !gridVisible; grid.visible = gridVisible; };
-  window.toggleWireframe = () => {
-    isWireframe = !isWireframe;
-    if (currentModel) {
-      currentModel.traverse((child) => {
-        if (child.isMesh && child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(mat => { if (mat) mat.wireframe = isWireframe; });
-        }
-      });
-    }
-  };
-
-  const backgrounds = [0x0d0d14, 0x1a1a2e, 0x2d2d3f, 0x111111, 0xf5f5f0];
-  let bgIndex = 0;
-  window.cycleBackground = () => {
-    bgIndex = (bgIndex + 1) % backgrounds.length;
-    renderer.setClearColor(backgrounds[bgIndex]);
-    scene.fog.color.setHex(backgrounds[bgIndex]);
-  };
 
   // ============================================
   // DRAG & DROP
