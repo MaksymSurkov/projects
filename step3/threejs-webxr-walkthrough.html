@@ -870,6 +870,7 @@
   let _arSavedCamPos = new THREE.Vector3();
   let _arSavedTarget = new THREE.Vector3();
   let arPlacedModel = null; // клон модели для AR
+  let xrSessionMode = 'none'; // 'none' | 'ar' | 'vr'
 
   function isARSession(session) {
     if (!session) return false;
@@ -888,7 +889,7 @@
   // AR-контроллер — реагирует на тап по экрану
   // Используем отдельный обработчик, который проверяет
   // находимся ли мы в AR-сессии
-  function onSelect() {
+  function onSelect(event) {
     const session = renderer.xr.getSession();
     if (!session) return;
 
@@ -1218,6 +1219,7 @@
     const session = renderer.xr.getSession();
     if (!session) return;
     const isAR = isARSession(session);
+    xrSessionMode = isAR ? 'ar' : 'vr';
 
     // Transparent background for AR camera feed
     if (isAR) {
@@ -1228,7 +1230,7 @@
     document.getElementById('controls-panel').style.display = 'none';
     document.getElementById('hud-top').style.opacity = '0';
     document.getElementById('mode-indicator').textContent = 'XR Mode';
-    document.getElementById('ar-hint').style.display = 'block';
+    document.getElementById('ar-hint').style.display = isAR ? 'block' : 'none';
 
     // Сохраняем позицию камеры — восстановим после выхода из AR
     _arSavedCamPos.copy(camera.position);
@@ -1251,31 +1253,15 @@
     if (isAR) {
       // Убираем модель из сцены только для AR
       if (currentModel) scene.remove(currentModel);
-
-      // GPU-ресурсы освобождаем через 1с — даём AR время полностью стартовать.
-      // Синхронный dispose() в sessionstart блокирует JS-поток и ломает инициализацию hit-test.
-      setTimeout(() => {
-        if (!renderer.xr.isPresenting) return; // сессия уже завершена — пропускаем
-        if (!currentModel) return;
-        currentModel.traverse(child => {
-          if (!child.isMesh) return;
-          if (child.geometry) child.geometry.dispose();
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(mat => {
-            if (!mat) return;
-            ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','lightMap','envMap']
-              .forEach(k => { if (mat[k] && mat[k].isTexture) mat[k].dispose(); });
-            mat.dispose();
-          });
-        });
-      }, 1000);
     }
 
     // BUG FIX: listener добавляется к session-объекту, который живёт ровно одну сессию —
     // нет риска накопления, так как session — новый объект при каждом входе в AR.
-    session.addEventListener('select', () => {
-      if (arReticle.visible) onARSelect();
-    });
+    if (isAR) {
+      session.addEventListener('select', () => {
+        if (arReticle.visible) onARSelect();
+      });
+    }
     // Очищаем hit-test когда сессия завершается изнутри
     session.addEventListener('end', () => {
       hitTestSource = null;
@@ -1284,14 +1270,19 @@
   });
 
   renderer.xr.addEventListener('sessionend', () => {
-    renderer.setClearColor(0x0d0d14, 1);
+    xrSessionMode = 'none';
+    renderer.setClearColor(backgrounds[bgIndex], 1);
 
     document.getElementById('controls-panel').style.display = 'flex';
     document.getElementById('hud-top').style.opacity = '1';
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
     document.getElementById('ar-hint').style.display = 'none';
+    document.getElementById('start-screen').classList.add('hidden');
 
-    if (scene.fog) scene.fog.density = 0.03;
+    if (scene.fog) {
+      scene.fog.density = 0.03;
+      scene.fog.color.setHex(backgrounds[bgIndex]);
+    }
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
     orbitControls.enabled = true;
@@ -1330,11 +1321,14 @@
     hitTestSourceRequested = false;
     arReticle.visible = false;
     currentMode = 'orbit';
+    setOrbitMode();
     // Убираем AR-стиль с хотспотов
     infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
 
     // Включаем тени через 2с — к тому времени модель уже перезалита в GPU
-    setTimeout(() => { renderer.shadowMap.enabled = true; }, 2000);
+    setTimeout(() => {
+      if (!renderer.xr.isPresenting) renderer.shadowMap.enabled = true;
+    }, 2000);
   });
 
   // ============================================
@@ -1438,7 +1432,7 @@
     }
 
     // AR hit-test — запрашиваем source на первом кадре (официальный паттерн Three.js)
-    if (frame) {
+    if (frame && xrSessionMode === 'ar') {
       const session = renderer.xr.getSession();
       const referenceSpace = renderer.xr.getReferenceSpace();
 
@@ -1470,6 +1464,8 @@
           arReticle.visible = false;
         }
       }
+    } else if (!renderer.xr.isPresenting) {
+      arReticle.visible = false;
     }
 
     // Позиция
@@ -1965,6 +1961,7 @@
   }
 
   const _occlusionRay = new THREE.Raycaster();
+  const _occlusionRayBack = new THREE.Raycaster();
   const _hsWorldPos = new THREE.Vector3();
   const _hsScreenV  = new THREE.Vector3();
 
@@ -1989,14 +1986,20 @@
 
     for (const hs of infoHotspots) {
       _hsScreenV.copy(hs.position).project(camera);
-      if (_hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+      if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
 
       // Окклюзия
       const toHs = new THREE.Vector3().subVectors(hs.position, camPos);
       const dist = toHs.length();
+      if (dist < 0.08) { hs.el.style.display = 'none'; continue; }
       _occlusionRay.set(camPos, toHs.normalize());
       _occlusionRay.far = dist - 0.08;
-      if (_occlusionRay.intersectObject(currentModel, true).length > 0) {
+      _occlusionRayBack.set(hs.position, toHs.clone().negate());
+      _occlusionRayBack.far = dist - 0.08;
+      if (
+        _occlusionRay.intersectObject(currentModel, true).length > 0 ||
+        _occlusionRayBack.intersectObject(currentModel, true).length > 0
+      ) {
         hs.el.style.display = 'none'; continue;
       }
 
@@ -2029,7 +2032,7 @@
       _hsScreenV.copy(_hsWorldPos).project(camera);
 
       // За спиной камеры или вне экрана — скрыть
-      if (_hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+      if (_hsScreenV.z < -1 || _hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
 
       const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-_hsScreenV.y * 0.5 + 0.5) * window.innerHeight;
