@@ -737,12 +737,21 @@
   const xrStatus = document.getElementById('xr-status');
   let xrRequestedMode = null; // 'ar' | 'vr' | null
   let webglContextLost = false;
+  const CONTEXT_RECOVERY_TIMEOUT_MS = 1200;
 
   // Android Chrome after AR can lose WebGL context / pause rendering.
   renderer.domElement.addEventListener('webglcontextlost', (e) => {
     e.preventDefault();
     webglContextLost = true;
     xrStatus.textContent = 'WebGL context lost… recovering';
+    setTimeout(() => {
+      const gl = renderer.getContext();
+      const stillLost = !!(gl && typeof gl.isContextLost === 'function' && gl.isContextLost());
+      if (stillLost && !renderer.xr.isPresenting) {
+        xrStatus.textContent = 'WebGL context lost. Reloading…';
+        window.location.reload();
+      }
+    }, CONTEXT_RECOVERY_TIMEOUT_MS);
   });
   renderer.domElement.addEventListener('webglcontextrestored', () => {
     webglContextLost = false;
@@ -750,11 +759,21 @@
   });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      setTimeout(() => { if (!renderer.xr.isPresenting) restoreRenderer(); }, 60);
+      setTimeout(() => {
+        if (!renderer.xr.isPresenting) {
+          restoreRenderer();
+          restartRenderLoop();
+        }
+      }, 60);
     }
   });
   window.addEventListener('pageshow', () => {
-    setTimeout(() => { if (!renderer.xr.isPresenting) restoreRenderer(); }, 60);
+    setTimeout(() => {
+      if (!renderer.xr.isPresenting) {
+        restoreRenderer();
+        restartRenderLoop();
+      }
+    }, 60);
   });
 
   async function setupXRButtons() {
@@ -1052,6 +1071,12 @@
     renderer.render(scene, camera);
   }
 
+  function restartRenderLoop() {
+    if (renderer.xr.isPresenting) return;
+    renderer.setAnimationLoop(null);
+    renderer.setAnimationLoop(animationLoop);
+  }
+
   function logContextState(tag) {
     const gl = renderer.getContext();
     const lost = !!(gl && typeof gl.isContextLost === 'function' && gl.isContextLost());
@@ -1320,6 +1345,7 @@
     renderer.setPixelRatio(isAR ? AR_PIXEL_RATIO : DEFAULT_PIXEL_RATIO);
 
     if (isAR) {
+      lastArHotspotUpdate = 0;
       // В AR временно скрываем модель до первого размещения.
       if (currentModel) {
         currentModel.updateMatrixWorld(true);
@@ -1377,6 +1403,7 @@
   renderer.xr.addEventListener('sessionend', () => {
     logContextState('sessionend');
     webglContextLost = false;
+    lastArHotspotUpdate = 0;
     xrSessionMode = 'none';
     xrRequestedMode = null;
     renderer.setClearColor(DEFAULT_BG, 1);
@@ -1405,7 +1432,8 @@
       currentModel.position.copy(_arSavedModelPos);
       currentModel.quaternion.copy(_arSavedModelQuat);
       currentModel.scale.copy(_arSavedModelScale);
-      currentModel.visible = _arSavedModelVisible;
+      // Форсируем возврат видимости, чтобы после AR не остаться с пустым экраном.
+      currentModel.visible = true;
       currentModel.updateMatrixWorld(true);
     }
     shadowFloor.visible = true;
@@ -1436,9 +1464,9 @@
     infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
 
     // Жёсткое восстановление рендера после выхода из AR/VR.
-    setTimeout(() => restoreRenderer(), 0);
-    setTimeout(() => restoreRenderer(), 120);
-    setTimeout(() => restoreRenderer(), 500);
+    setTimeout(() => { restoreRenderer(); restartRenderLoop(); }, 0);
+    setTimeout(() => { restoreRenderer(); restartRenderLoop(); }, 120);
+    setTimeout(() => { restoreRenderer(); restartRenderLoop(); }, 500);
 
     // Если контекст уже потерян — мягко перезагружаем страницу.
     const gl = renderer.getContext();
@@ -1483,8 +1511,10 @@
   // ============================================
   const clock = new THREE.Clock();
   const posDisplay = document.getElementById('position-display');
+  let lastArHotspotUpdate = 0;
+  const AR_HOTSPOT_UPDATE_MS = 100;
 
-  renderer.setAnimationLoop((timestamp, frame) => {
+  function animationLoop(timestamp, frame) {
     const gl = renderer.getContext();
     if (webglContextLost) {
       if (gl && typeof gl.isContextLost === 'function' && !gl.isContextLost()) {
@@ -1649,10 +1679,19 @@
     constrainCamera();
 
     // Info hotspots — проекция 3D → 2D
-    updateInfoHotspots();
+    if (renderer.xr.isPresenting && xrSessionMode === 'ar') {
+      if (!arModelPlaced || (timestamp - lastArHotspotUpdate) >= AR_HOTSPOT_UPDATE_MS) {
+        updateInfoHotspots();
+        lastArHotspotUpdate = timestamp;
+      }
+    } else {
+      updateInfoHotspots();
+    }
 
     renderer.render(scene, camera);
-  });
+  }
+
+  renderer.setAnimationLoop(animationLoop);
 
   // ============================================
   // MATTERPORT-STYLE NAVIGATION
