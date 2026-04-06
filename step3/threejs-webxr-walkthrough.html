@@ -344,6 +344,173 @@
 
     canvas { display: block; }
 
+    /* ===== ADD HOTSPOT MODE ===== */
+    body.hotspot-mode { cursor: crosshair !important; }
+    body.hotspot-mode canvas { cursor: crosshair !important; }
+
+    /* Попап ввода названия */
+    #hotspot-popup {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+    }
+
+    #hotspot-popup-inner {
+      background: rgba(13,13,20,0.97);
+      border: 1px solid rgba(77,171,247,0.3);
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 280px;
+      backdrop-filter: blur(20px);
+    }
+
+    #hotspot-popup-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #4dabf7;
+    }
+
+    #hotspot-popup-input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    #hotspot-popup-input:focus { border-color: #4dabf7; }
+
+    #hotspot-popup-btns { display: flex; gap: 8px; }
+
+    #hotspot-popup-ok {
+      flex: 1;
+      background: rgba(77,171,247,0.15);
+      border: 1px solid rgba(77,171,247,0.4);
+      color: #4dabf7;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    #hotspot-popup-ok:hover { background: rgba(77,171,247,0.3); }
+
+    #hotspot-popup-cancel {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #555;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    #hotspot-popup-cancel:hover { border-color: #444; color: #888; }
+
+    .btn.hotspot-active {
+      background: rgba(77,171,247,0.2) !important;
+      border-color: #4dabf7 !important;
+      color: #4dabf7 !important;
+    }
+
+    /* ===== INFO HOTSPOTS ===== */
+    .info-hotspot {
+      position: fixed;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(77, 171, 247, 0.85);
+      border: 2px solid #fff;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      z-index: 15;
+      pointer-events: auto;
+      transition: transform 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .info-hotspot::after {
+      content: 'i';
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .info-hotspot:hover {
+      transform: translate(-50%, -50%) scale(1.25);
+      background: rgba(77, 171, 247, 1);
+    }
+
+    .info-hotspot-label {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.88);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      padding: 6px 14px;
+      border: 1px solid rgba(77, 171, 247, 0.4);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .info-hotspot:hover .info-hotspot-label {
+      opacity: 1;
+    }
+
+    /* AR режим — компактные хотспоты */
+    .info-hotspot.ar-mode {
+      width: 20px;
+      height: 20px;
+      background: rgba(77, 171, 247, 0.9);
+      border-width: 1.5px;
+    }
+
+    .info-hotspot.ar-mode::after {
+      font-size: 10px;
+    }
+
+    .info-hotspot.ar-mode .info-hotspot-label {
+      font-size: 9px;
+      padding: 4px 10px;
+      bottom: 26px;
+      letter-spacing: 0.5px;
+    }
+
+    .info-hotspot.ar-mode:hover {
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+
+    .hotspot-coords {
+      display: block;
+      margin-top: 4px;
+      font-size: 9px;
+      color: #4dabf7;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
       #hud-top h1 { font-size: 10px; letter-spacing: 2px; }
@@ -411,6 +578,21 @@
 </div>
 
 <div id="crosshair"></div>
+
+<!-- Info hotspots контейнер -->
+<div id="hotspots-container"></div>
+
+<!-- Попап для ввода названия хотспота -->
+<div id="hotspot-popup" style="display:none">
+  <div id="hotspot-popup-inner">
+    <div id="hotspot-popup-title">Название</div>
+    <input id="hotspot-popup-input" type="text" placeholder="Введите название..." autocomplete="off">
+    <div id="hotspot-popup-btns">
+      <button id="hotspot-popup-ok">Добавить</button>
+      <button id="hotspot-popup-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
 <div id="mode-indicator">Orbit Mode</div>
 <div id="position-display"></div>
 <div id="xr-status">Checking WebXR...</div>
@@ -431,7 +613,7 @@
   padding:10px 20px;
   border:1px solid rgba(255,255,255,0.2);
   pointer-events:none;
-  white-space:nowrap;
+  text-align:center;
 ">Move phone to scan floor · Tap to place</div>
 
 <div id="controls-panel">
@@ -441,6 +623,7 @@
   <button class="btn" onclick="toggleWireframe()">Wireframe</button>
   <button class="btn" onclick="cycleBackground()">Background</button>
   <button class="btn" onclick="fileInput.click()">Load .glb</button>
+  <!-- <button class="btn" id="btn-add-hotspot" onclick="toggleHotspotMode()">+ Hotspot</button> -->
 </div>
 
 <div id="fps-hint" onclick="lockPointer()">
@@ -466,7 +649,7 @@
     <strong style="color:#4dabf7">AR</strong> — point phone camera
   </p>
   <button class="btn-start" onclick="fileInput.click()">Load Model</button>
-  <button class="btn-secondary" onclick="loadDemo()">The Drawing Room</button>
+  <button class="btn-secondary" onclick="loadDemo()">Art Gallery Tour</button>
 </div>
 
 <div id="dropzone"><h2>Drop .glb / .gltf here</h2></div>
@@ -684,18 +867,16 @@
   let hitTestSource = null;
   let hitTestSourceRequested = false;
   let arModelPlaced = false;
+  let _arSavedCamPos = new THREE.Vector3();
+  let _arSavedTarget = new THREE.Vector3();
+  let _arRestoreCamera = false; // флаг: восстановить камеру в следующем кадре animation loop
   let arPlacedModel = null; // клон модели для AR
 
   const arReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.1, 0.15, 32).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({
-      color: 0x4dabf7,
-      side: THREE.DoubleSide,
-      depthTest: false
-    })
+    new THREE.MeshBasicMaterial({ color: 0x4dabf7, side: THREE.DoubleSide })
   );
   arReticle.matrixAutoUpdate = false;
-  arReticle.renderOrder = 999;
   arReticle.visible = false;
   scene.add(arReticle);
 
@@ -890,12 +1071,10 @@
         scene.add(model);
         currentModel = model;
 
-        const dist = Math.max(scaledSize.x, scaledSize.z) * 1.2;
-        camera.position.set(dist, scaledSize.y * 0.8, dist);
-        orbitControls.target.set(0, scaledSize.y * 0.4, 0);
-        orbitControls.update();
-
-        autoGenerateWaypoints(model, scaledBox);
+        // Recompute bbox AFTER repositioning so waypoints align with actual model position
+        const finalBox = new THREE.Box3().setFromObject(model);
+        autoGenerateWaypoints(model, finalBox);
+        startInsideRoom();
 
         document.getElementById('loading').classList.remove('active');
         document.getElementById('position-display').style.display = 'block';
@@ -916,12 +1095,12 @@
   }
 
   // ============================================
-  // THE DRAWING ROOM — load bundled GLB
+  // ART GALLERY TOUR — load bundled GLB
   // ============================================
   function loadDemo() {
     document.getElementById('loading').classList.add('active');
     document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('loading-text').textContent = 'Loading The Drawing Room...';
+    document.getElementById('loading-text').textContent = 'Loading Art Gallery Tour...';
 
     if (currentModel) { scene.remove(currentModel); currentModel = null; }
     if (typeof clearWaypoints === 'function') clearWaypoints();
@@ -958,12 +1137,10 @@
         scene.add(model);
         currentModel = model;
 
-        // Camera inside the room at eye level
-        camera.position.set(0, PLAYER_HEIGHT, scaledSize.z * 0.2);
-        orbitControls.target.set(0, scaledSize.y * 0.4, 0);
-        orbitControls.update();
-
-        autoGenerateWaypoints(model, scaledBox);
+        // Recompute bbox AFTER repositioning so waypoints align with actual model position
+        const finalBox = new THREE.Box3().setFromObject(model);
+        autoGenerateWaypoints(model, finalBox);
+        startInsideRoom();
 
         document.getElementById('loading').classList.remove('active');
         document.getElementById('position-display').style.display = 'block';
@@ -1045,32 +1222,34 @@
     document.getElementById('mode-indicator').textContent = 'XR Mode';
     document.getElementById('ar-hint').style.display = 'block';
 
+    // Сохраняем позицию камеры — восстановим после выхода из AR
+    _arSavedCamPos.copy(camera.position);
+    _arSavedTarget.copy(orbitControls.target);
+
     // Scene adjustments
     if (scene.fog) scene.fog.density = 0;
-    grid.visible = false;
-    shadowFloor.visible = false;
+    scene.remove(grid);
+    scene.remove(shadowFloor);
     hemiLight.intensity = 2.0;
     dirLight.intensity = 3.0;
-    if (currentModel) currentModel.visible = false;
     navReticle.visible = false;
+    orbitControls.enabled = false;
     presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
-    // Tap handler — works for both transient (mobile screen tap) and controller
+    // Отключаем тени и снижаем pixel ratio
+    renderer.shadowMap.enabled = false;
+    renderer.setPixelRatio(1);
+
+    // Убираем модель из сцены — Three.js не будет её рендерить и обходить каждый кадр.
+    // dispose() не делаем — геометрии нужны чтобы восстановить модель при sessionend.
+    if (currentModel) scene.remove(currentModel);
+
+    // BUG FIX: listener добавляется к session-объекту, который живёт ровно одну сессию —
+    // нет риска накопления, так как session — новый объект при каждом входе в AR.
     session.addEventListener('select', () => {
       if (arReticle.visible) onARSelect();
     });
-
-    // Request hit-test source immediately at session start (most reliable timing)
-    session.requestReferenceSpace('viewer').then((viewerSpace) => {
-      session.requestHitTestSource({ space: viewerSpace }).then((source) => {
-        hitTestSource = source;
-      }).catch((err) => {
-        console.warn('[AR] requestHitTestSource failed:', err.message);
-      });
-    }).catch((err) => {
-      console.warn('[AR] requestReferenceSpace(viewer) failed:', err.message);
-    });
-
+    // Очищаем hit-test когда сессия завершается изнутри
     session.addEventListener('end', () => {
       hitTestSource = null;
       hitTestSourceRequested = false;
@@ -1085,14 +1264,25 @@
     document.getElementById('mode-indicator').textContent = 'Orbit Mode';
     document.getElementById('ar-hint').style.display = 'none';
 
-    scene.fog.density = 0.03;
-    grid.visible = true;
-    shadowFloor.visible = true;
+    if (scene.fog) scene.fog.density = 0.03;
     hemiLight.intensity = 0.7;
     dirLight.intensity = 1.3;
+    orbitControls.enabled = true;
 
-    if (currentModel) currentModel.visible = true;
+    // pixel ratio восстанавливаем сразу, тени — через паузу.
+    // Если включить тени немедленно, Three.js попытается перерендерить shadow map
+    // для ВСЕЙ сцены в первом же кадре → загрузка всех материалов сразу → context loss → "Aw Snap"
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = false; // включим позже
+
+    if (currentModel) scene.add(currentModel);
+    scene.add(grid);
+    scene.add(shadowFloor);
     presetWaypoints.forEach(wp => { wp.marker.visible = true; });
+
+    // Восстанавливаем камеру через флаг — animation loop применит в первом же своём кадре,
+    // когда XR уже полностью завершён и camera снова под нашим контролем
+    _arRestoreCamera = true;
 
     if (arPlacedModel) {
       scene.remove(arPlacedModel);
@@ -1103,9 +1293,12 @@
     hitTestSource = null;
     hitTestSourceRequested = false;
     arReticle.visible = false;
-
     currentMode = 'orbit';
-    orbitControls.enabled = true;
+    // Убираем AR-стиль с хотспотов
+    infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
+
+    // Включаем тени через 2с — к тому времени модель уже перезалита в GPU
+    setTimeout(() => { renderer.shadowMap.enabled = true; }, 2000);
   });
 
   // ============================================
@@ -1147,6 +1340,14 @@
   renderer.setAnimationLoop((timestamp, frame) => {
     const delta = clock.getDelta();
 
+    // Восстановление камеры после AR — применяем в первом кадре вне XR
+    if (_arRestoreCamera && !renderer.xr.isPresenting) {
+      _arRestoreCamera = false;
+      camera.position.copy(_arSavedCamPos);
+      orbitControls.target.copy(_arSavedTarget);
+      orbitControls.update();
+    }
+
     // FPS движение (только вне XR)
     if (!renderer.xr.isPresenting) {
       if (currentMode === 'fps' && fpsControls.isLocked) {
@@ -1170,6 +1371,12 @@
       }
 
       if (currentMode === 'orbit') {
+        // Keep target 2m in front of camera → LMB drag = look around in place
+        if (!navAnimating) {
+          const fwd = new THREE.Vector3();
+          camera.getWorldDirection(fwd);
+          orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
+        }
         orbitControls.update();
       }
     }
@@ -1183,7 +1390,7 @@
       camera.position.lerpVectors(navAnimFrom.cam, navAnimTo.cam, t);
       orbitControls.target.lerpVectors(navAnimFrom.target, navAnimTo.target, t);
       orbitControls.update();
-      if (navAnimProgress >= 1) navAnimating = false;
+      if (navAnimProgress >= 1) { navAnimating = false; if (typeof onNavAnimEnd === 'function') onNavAnimEnd(); }
     }
 
     // Cursor reticle pulse
@@ -1192,8 +1399,8 @@
       navRing.material.opacity = pulse * 0.85;
     }
 
-    // Preset waypoints slow pulse (only non-hovered ones)
-    if (presetWaypoints.length > 0) {
+    // Preset waypoints slow pulse (only non-hovered ones, only outside XR)
+    if (presetWaypoints.length > 0 && !renderer.xr.isPresenting) {
       const slowPulse = 0.15 + 0.1 * Math.sin(clock.elapsedTime * 1.5);
       presetWaypoints.forEach(wp => {
         if (wp === hoveredWaypoint) return;
@@ -1202,18 +1409,40 @@
       });
     }
 
-    // AR hit-test — use source requested at sessionstart
-    if (frame && hitTestSource) {
+    // AR hit-test — запрашиваем source на первом кадре (официальный паттерн Three.js)
+    if (frame) {
+      const session = renderer.xr.getSession();
       const referenceSpace = renderer.xr.getReferenceSpace();
-      const hitTestResults = frame.getHitTestResults(hitTestSource);
-      if (hitTestResults.length > 0) {
-        const pose = hitTestResults[0].getPose(referenceSpace);
-        if (pose) {
-          arReticle.visible = true;
-          arReticle.matrix.fromArray(pose.transform.matrix);
+
+      if (!hitTestSourceRequested && session) {
+        hitTestSourceRequested = true;
+        const arHintEl = document.getElementById('ar-hint');
+        if (arHintEl) arHintEl.textContent = 'Initializing tracking...';
+        session.requestReferenceSpace('viewer').then((viewerSpace) => {
+          return session.requestHitTestSource({ space: viewerSpace });
+        }).then((source) => {
+          hitTestSource = source;
+          if (arHintEl) arHintEl.innerHTML = 'Slowly move phone · point at floor or table<br><span style="font-size:9px;opacity:0.6">Blue circle appears on detected surface</span>';
+        }).catch((err) => {
+          hitTestSourceRequested = false;
+          if (arHintEl) arHintEl.textContent = 'Hit-test error: ' + (err && err.message ? err.message : 'unknown');
+        });
+      }
+
+      if (hitTestSource && referenceSpace) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults.length > 0) {
+          const pose = hitTestResults[0].getPose(referenceSpace);
+          if (pose) {
+            arReticle.visible = true;
+            arReticle.matrix.fromArray(pose.transform.matrix);
+            arReticle.matrixWorldNeedsUpdate = true;
+            const arHintEl = document.getElementById('ar-hint');
+            if (arHintEl) arHintEl.style.display = 'none'; // скрываем подсказку когда кружок найден
+          }
+        } else {
+          arReticle.visible = false;
         }
-      } else {
-        arReticle.visible = false;
       }
     }
 
@@ -1224,6 +1453,12 @@
         `Y: <span>${camera.position.y.toFixed(1)}</span> ` +
         `Z: <span>${camera.position.z.toFixed(1)}</span>`;
     }
+
+    // Ограничение камеры внутри помещения
+    constrainCamera();
+
+    // Info hotspots — проекция 3D → 2D
+    updateInfoHotspots();
 
     renderer.render(scene, camera);
   });
@@ -1238,6 +1473,7 @@
   // ============================================
 
   let navAnimating = false;
+  let onNavAnimEnd = null;
   let navAnimProgress = 0;
   const navAnimFrom = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
   const navAnimTo   = { cam: new THREE.Vector3(), target: new THREE.Vector3() };
@@ -1283,60 +1519,147 @@
     return group;
   }
 
+  // Find the floor Y by casting a downward ray at a given XZ position.
+  // Returns the Y of the lowest upward-facing surface hit, or null.
+  function findFloorY(model, x, z, rayOriginY) {
+    const ray = new THREE.Raycaster();
+    ray.set(new THREE.Vector3(x, rayOriginY, z), new THREE.Vector3(0, -1, 0));
+    const hits = ray.intersectObject(model, true);
+    let best = null;
+    for (const hit of hits) {
+      if (!hit.face) continue;
+      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+      if (wn.y > 0.5) {
+        if (best === null || hit.point.y < best) best = hit.point.y;
+      }
+    }
+    return best;
+  }
+
+  // Проверяет что точка находится внутри здания:
+  // кидает 4 горизонтальных луча (N/S/E/W) на высоте 1м от пола.
+  // Если минимум 2 луча попадают в стену в пределах maxDist — точка внутри.
+  function isInsideBuilding(model, floorPos, maxDist) {
+    const origin = floorPos.clone();
+    origin.y += 1.0;
+    const dirs = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1),
+    ];
+    const ray = new THREE.Raycaster();
+    ray.far = maxDist;
+    let walls = 0;
+    for (const dir of dirs) {
+      ray.set(origin, dir);
+      if (ray.intersectObject(model, true).length > 0) walls++;
+    }
+    return walls >= 2;
+  }
+
   function autoGenerateWaypoints(model, bbox) {
     presetWaypoints.forEach(wp => scene.remove(wp.marker));
     presetWaypoints.length = 0;
     currentWpIndex = -1;
 
-    const size = bbox.getSize(new THREE.Vector3());
-    // Step: aim for ~5-8 points along shortest axis
-    const step = Math.max(0.8, Math.min(size.x, size.z) / 5);
-    const downRay = new THREE.Raycaster();
-    const placed = [];
+    const size   = bbox.getSize(new THREE.Vector3());
+    const rayTop = bbox.max.y + 1;
 
-    const xCount = Math.ceil(size.x / step) + 1;
-    const zCount = Math.ceil(size.z / step) + 1;
+    // Step 1: collect all floor hit points on a coarse grid
+    const step = Math.max(1.0, Math.min(size.x, size.z) / 8);
+    const floorPts = [];
+    const xSteps = Math.ceil(size.x / step) + 1;
+    const zSteps = Math.ceil(size.z / step) + 1;
 
-    for (let xi = 0; xi < xCount; xi++) {
-      for (let zi = 0; zi < zCount; zi++) {
+    // Also collect Y values to find true floor (lowest 10th percentile)
+    const allY = [];
+    for (let xi = 0; xi < xSteps; xi++) {
+      for (let zi = 0; zi < zSteps; zi++) {
         const x = bbox.min.x + xi * step;
         const z = bbox.min.z + zi * step;
-
-        downRay.set(
-          new THREE.Vector3(x, bbox.max.y + 1, z),
-          new THREE.Vector3(0, -1, 0)
-        );
-
-        const hits = downRay.intersectObject(model, true);
-        // Collect all floor candidates (upward normal), pick the lowest y = actual floor
-        let floorHit = null;
-        for (const hit of hits) {
-          if (!hit.face) continue;
-          const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-          if (wn.y > 0.5) {
-            if (!floorHit || hit.point.y < floorHit.point.y) floorHit = hit;
-          }
-        }
-        if (floorHit) {
-          const pos = floorHit.point.clone();
-          if (!placed.some(p => p.distanceTo(pos) < step * 0.75)) {
-            placed.push(pos);
-            const marker = createPresetMarker();
-            marker.position.copy(pos);
-            marker.position.y += 0.015;
-            scene.add(marker);
-            presetWaypoints.push({ position: pos.clone(), marker });
-          }
-        }
+        const y = findFloorY(model, x, z, rayTop);
+        if (y !== null) { floorPts.push(new THREE.Vector3(x, y, z)); allY.push(y); }
       }
     }
+    if (floorPts.length < 3) return;
+
+    // Keep only points near the true floor (filter out tables, ledges, etc.)
+    allY.sort((a, b) => a - b);
+    const floorY = allY[Math.floor(allY.length * 0.1)];
+    const tolerance = Math.max(0.4, size.y * 0.08);
+    const groundPts = floorPts.filter(p => Math.abs(p.y - floorY) <= tolerance);
+    if (groundPts.length < 3) return;
+
+    // Filter to INTERIOR points only: must have walls in ≥2 directions within maxWallDist
+    const maxWallDist = Math.min(25, Math.max(size.x, size.z) * 0.4);
+    const interiorPts = groundPts.filter(p => isInsideBuilding(model, p, maxWallDist));
+    // Fallback to all ground points if interior filter is too strict
+    const pts = interiorPts.length >= 3 ? interiorPts : groundPts;
+    console.log('[WP] interior pts:', interiorPts.length, '/ ground pts:', groundPts.length, '/ maxWallDist:', maxWallDist.toFixed(1));
+
+    // Step 2: find the two floor points farthest apart — these are the two ends
+    // Pass 1: find point farthest from pts[0]
+    const p0 = pts[0];
+    let ptA = p0, maxD1 = 0;
+    for (const p of pts) {
+      const d = p.distanceTo(p0);
+      if (d > maxD1) { maxD1 = d; ptA = p; }
+    }
+    // Pass 2: find point farthest from ptA → ptC (the opposite end)
+    let ptC = p0, maxD2 = 0;
+    for (const p of pts) {
+      const d = p.distanceTo(ptA);
+      if (d > maxD2) { maxD2 = d; ptC = p; }
+    }
+
+    // Step 3: find floor points nearest to 1/3 and 2/3 along ptA→ptC
+    function nearestPt(target) {
+      let best = pts[0];
+      for (const p of pts) {
+        if (p.distanceTo(target) < best.distanceTo(target)) best = p;
+      }
+      return best;
+    }
+    const t1 = ptA.clone().lerp(ptC, 1/3);
+    const t2 = ptA.clone().lerp(ptC, 2/3);
+    const ptB = nearestPt(t1);
+    const ptD = nearestPt(t2);
+
+    for (const pos of [ptA, ptB, ptD, ptC]) {
+      const marker = createPresetMarker();
+      marker.position.copy(pos);
+      marker.position.y += 0.015;
+      scene.add(marker);
+      presetWaypoints.push({ position: pos.clone(), marker });
+    }
+  }
+
+  function startInsideRoom() {
+    if (presetWaypoints.length === 0) return;
+
+    // Start at the first waypoint (one end of the room), look toward next
+    currentWpIndex = 0;
+    const p = presetWaypoints[0].position;
+
+    camera.position.set(p.x, p.y + PLAYER_HEIGHT, p.z);
+
+    // Look toward the next waypoint
+    const lookTarget = presetWaypoints.length > 1
+      ? presetWaypoints[1].position
+      : new THREE.Vector3(p.x + 1, p.y, p.z);
+    const fwd = new THREE.Vector3(lookTarget.x - p.x, 0, lookTarget.z - p.z).normalize();
+    if (fwd.length() < 0.01) fwd.set(0, 0, -1);
+    orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
+    orbitControls.update();
   }
 
   function flyTo(destFloorPoint) {
     const destCam = new THREE.Vector3(destFloorPoint.x, destFloorPoint.y + PLAYER_HEIGHT, destFloorPoint.z);
-    const lookDir = new THREE.Vector3().subVectors(orbitControls.target, camera.position).normalize();
-    const lookDist = Math.max(1.5, camera.position.distanceTo(orbitControls.target));
-    const destTarget = destCam.clone().add(lookDir.multiplyScalar(lookDist));
+    // Target stays 2m ahead in current look direction → lands in "look around" mode
+    const lookDir = new THREE.Vector3();
+    camera.getWorldDirection(lookDir);
+    const destTarget = destCam.clone().addScaledVector(lookDir, 2.0);
 
     navAnimFrom.cam.copy(camera.position);
     navAnimFrom.target.copy(orbitControls.target);
@@ -1397,23 +1720,55 @@
       return;
     }
 
-    // Floor hit
+    // Surface hit — пол ИЛИ стена
     renderer.domElement.style.cursor = 'default';
     const hits = navRaycaster.intersectObject(currentModel, true);
     navHitPoint = null;
     navReticle.visible = false;
 
+    const _up = new THREE.Vector3(0, 1, 0);
+
     for (const hit of hits) {
       if (!hit.face) continue;
-      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-      if (wn.y > 0.5) {
+      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
+
+      const isFloor = wn.y > 0.5;          // горизонтальная поверхность
+      const isWall  = Math.abs(wn.y) < 0.3; // вертикальная поверхность
+
+      if (!isFloor && !isWall) continue;
+
+      // Размещаем reticle чуть над поверхностью вдоль нормали
+      navReticle.position.copy(hit.point).addScaledVector(wn, 0.018);
+
+      // Поворачиваем reticle — его "верх" (+Y в локальных) совмещаем с нормалью
+      navReticle.quaternion.setFromUnitVectors(_up, wn);
+
+      navReticle.visible = true;
+      renderer.domElement.style.cursor = 'pointer';
+
+      if (isFloor) {
+        // Обычный пол — летим прямо сюда
         navHitPoint = hit.point.clone();
-        navReticle.position.copy(navHitPoint);
-        navReticle.position.y += 0.01;
-        navReticle.visible = true;
-        renderer.domElement.style.cursor = 'pointer';
-        break;
+      } else {
+        // Стена — находим пол под точкой попадания и летим к основанию стены
+        // Смещаем точку назад от стены на 0.5м чтобы не влипнуть
+        const base = hit.point.clone().addScaledVector(wn, 0.5);
+        // Кастуем луч вниз чтобы найти Y пола
+        const downRay = new THREE.Raycaster(
+          base.clone().setY(base.y + 0.5),
+          new THREE.Vector3(0, -1, 0)
+        );
+        const floorHits = downRay.intersectObject(currentModel, true);
+        let floorY = base.y;
+        for (const fh of floorHits) {
+          if (!fh.face) continue;
+          const fn = fh.face.normal.clone().transformDirection(fh.object.matrixWorld).normalize();
+          if (fn.y > 0.5) { floorY = fh.point.y; break; }
+        }
+        navHitPoint = new THREE.Vector3(base.x, floorY, base.z);
       }
+
+      break;
     }
   });
 
@@ -1442,8 +1797,23 @@
     const dy = e.clientY - navMouseDownY;
     if (Math.sqrt(dx * dx + dy * dy) > 5) return; // drag, not click
 
+    // Режим расстановки хотспотов — клик по любой поверхности
+    if (hotspotMode) {
+      // Пересчитываем позицию мыши и делаем raycast по текущей позиции курсора
+      const mx = (e.clientX / window.innerWidth) * 2 - 1;
+      const my = -(e.clientY / window.innerHeight) * 2 + 1;
+      const hsRay = new THREE.Raycaster();
+      hsRay.setFromCamera(new THREE.Vector2(mx, my), camera);
+      if (currentModel) {
+        const hsHits = hsRay.intersectObject(currentModel, true);
+        if (hsHits.length > 0) {
+          openHotspotPopup(hsHits[0].point);
+        }
+      }
+      return;
+    }
+
     if (hoveredWaypoint) {
-      // Find index for scroll tracking
       currentWpIndex = presetWaypoints.indexOf(hoveredWaypoint);
       flyTo(hoveredWaypoint.position);
       return;
@@ -1459,23 +1829,299 @@
   renderer.domElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (renderer.xr.isPresenting || presetWaypoints.length === 0) return;
-    if (scrollThrottle) return;
-    scrollThrottle = true;
-    setTimeout(() => { scrollThrottle = false; }, 600);
+    if (scrollThrottle || navAnimating) return;
 
-    // Find nearest waypoint to camera as starting reference
-    if (currentWpIndex === -1) {
-      let minDist = Infinity;
-      presetWaypoints.forEach((wp, i) => {
-        const d = camera.position.distanceTo(wp.position);
-        if (d < minDist) { minDist = d; currentWpIndex = i; }
-      });
+    // Направление скролла зависит от того, куда смотрит камера
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    fwd.y = 0; fwd.normalize();
+
+    // Ось маршрута: от первого вейпоинта к последнему
+    const pathDir = new THREE.Vector3()
+      .subVectors(
+        presetWaypoints[presetWaypoints.length - 1].position,
+        presetWaypoints[0].position
+      ).normalize();
+
+    // Если камера смотрит вдоль маршрута — скрол вниз = вперёд (+1)
+    // Если камера развернута — скрол вниз = назад (-1)
+    const aligned = fwd.dot(pathDir) >= 0;
+    const rawDir = e.deltaY > 0 ? -1 : 1;
+    const dir = aligned ? rawDir : -rawDir;
+
+    const next = currentWpIndex + dir;
+    if (next < 0 || next >= presetWaypoints.length) return;
+
+    scrollThrottle = true;
+    currentWpIndex = next;
+    flyTo(presetWaypoints[currentWpIndex].position);
+    // Сбрасываем блокировку только после окончания анимации + 400мс буфер для инерции тачпада
+    onNavAnimEnd = () => {
+      onNavAnimEnd = null;
+      setTimeout(() => { scrollThrottle = false; }, 400);
+    };
+  }, { passive: false });
+
+  // ============================================
+  // INFO HOTSPOTS
+  // ============================================
+  const infoHotspots = [];
+  const hotspotsContainer = document.getElementById('hotspots-container');
+
+  function createHotspotEl(label) {
+    const el = document.createElement('div');
+    el.className = 'info-hotspot';
+    el.style.display = 'none';
+    el.innerHTML = `<div class="info-hotspot-label">${label}</div>`;
+    hotspotsContainer.appendChild(el);
+    return el;
+  }
+
+  function addInfoHotspot(position, label) {
+    const p = position.clone();
+    const el = createHotspotEl(label);
+    const hs = { position: p, el };
+    infoHotspots.push(hs);
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      flyToHotspot(hs);
+    });
+    console.log(`[Hotspot] "${label}" → x: ${p.x.toFixed(3)}, y: ${p.y.toFixed(3)}, z: ${p.z.toFixed(3)}`);
+  }
+
+  function flyToHotspot(hs) {
+    if (!currentModel) return;
+
+    // Ищем стену, к которой прикреплён хотспот: кастуем 24 горизонтальных луча,
+    // берём направление с МИНИМАЛЬНЫМ расстоянием — это и есть стена.
+    // Подходим с противоположной стороны.
+    const origin = hs.position.clone();
+    origin.y += 0.05;
+
+    const scanRay = new THREE.Raycaster();
+    scanRay.far = 30;
+
+    let wallDir = new THREE.Vector3(1, 0, 0);
+    let minDist = Infinity;
+    const steps = 24;
+
+    for (let i = 0; i < steps; i++) {
+      const angle = (i / steps) * Math.PI * 2;
+      const dir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+      scanRay.set(origin, dir);
+      const hits = scanRay.intersectObject(currentModel, true);
+      if (hits.length > 0 && hits[0].distance < minDist) {
+        minDist = hits[0].distance;
+        wallDir = dir.clone();
+      }
     }
 
-    const dir = e.deltaY > 0 ? 1 : -1;
-    currentWpIndex = (currentWpIndex + dir + presetWaypoints.length) % presetWaypoints.length;
-    flyTo(presetWaypoints[currentWpIndex].position);
-  }, { passive: false });
+    // Открытая сторона — напротив стены
+    const bestDir = wallDir.clone().negate();
+
+    // Встаём в 1.5м от хотспота по открытой стороне
+    const standDist = 1.5;
+    const destCam = new THREE.Vector3(
+      hs.position.x + bestDir.x * standDist,
+      camera.position.y,
+      hs.position.z + bestDir.z * standDist
+    );
+    // Смотрим прямо на хотспот
+    const destTarget = hs.position.clone();
+
+    navAnimFrom.cam.copy(camera.position);
+    navAnimFrom.target.copy(orbitControls.target);
+    navAnimTo.cam.copy(destCam);
+    navAnimTo.target.copy(destTarget);
+    navAnimProgress = 0;
+    navAnimating = true;
+    if (currentMode === 'fps') { fpsControls.unlock(); setOrbitMode(); }
+  }
+
+  const _occlusionRay = new THREE.Raycaster();
+  const _hsWorldPos = new THREE.Vector3();
+  const _hsScreenV  = new THREE.Vector3();
+
+  function updateInfoHotspots() {
+    // ── AR режим: модель убрана из сцены, но arPlacedModel может быть размещён ──
+    if (renderer.xr.isPresenting) {
+      if (arPlacedModel && arPlacedModel.children.length > 0) {
+        _updateHotspotsAR();
+      } else {
+        infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
+      }
+      return;
+    }
+
+    // ── Обычный режим ──
+    if (!currentModel || !currentModel.parent) {
+      infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
+      return;
+    }
+
+    const camPos = camera.position.clone();
+
+    for (const hs of infoHotspots) {
+      _hsScreenV.copy(hs.position).project(camera);
+      if (_hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+
+      // Окклюзия
+      const toHs = new THREE.Vector3().subVectors(hs.position, camPos);
+      const dist = toHs.length();
+      _occlusionRay.set(camPos, toHs.normalize());
+      _occlusionRay.far = dist - 0.08;
+      if (_occlusionRay.intersectObject(currentModel, true).length > 0) {
+        hs.el.style.display = 'none'; continue;
+      }
+
+      const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-_hsScreenV.y * 0.5 + 0.5) * window.innerHeight;
+      hs.el.style.left = x + 'px';
+      hs.el.style.top  = y + 'px';
+      hs.el.classList.remove('ar-mode');
+      hs.el.style.display = 'flex';
+    }
+  }
+
+  function _updateHotspotsAR() {
+    // arPlacedModel содержит клон галереи с offset'ом центрирования
+    const clonedChild = arPlacedModel.children[0];
+    // Убеждаемся что матрицы актуальны
+    arPlacedModel.updateMatrixWorld(true);
+
+    const camPos = new THREE.Vector3();
+    camera.getWorldPosition(camPos);
+
+    for (const hs of infoHotspots) {
+      // Трансформируем: позиция хотспота (в пространстве оригинальной галереи)
+      // → пространство клона (добавляем offset центрирования)
+      // → мировое пространство AR (через матрицу wrapper'а)
+      _hsWorldPos.copy(hs.position).add(clonedChild.position);
+      arPlacedModel.localToWorld(_hsWorldPos);
+
+      // Проецируем через AR-камеру
+      _hsScreenV.copy(_hsWorldPos).project(camera);
+
+      // За спиной камеры или вне экрана — скрыть
+      if (_hsScreenV.z > 1) { hs.el.style.display = 'none'; continue; }
+
+      const x = (_hsScreenV.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-_hsScreenV.y * 0.5 + 0.5) * window.innerHeight;
+
+      hs.el.style.left = x + 'px';
+      hs.el.style.top  = y + 'px';
+      hs.el.classList.add('ar-mode');
+      hs.el.style.display = 'flex';
+    }
+  }
+
+  // ============================================
+  // ОГРАНИЧЕНИЕ КАМЕРЫ ВНУТРИ ПОМЕЩЕНИЯ
+  // ============================================
+  const _confineRay = new THREE.Raycaster();
+  const _wallDirs = [
+    new THREE.Vector3( 1, 0, 0),
+    new THREE.Vector3(-1, 0, 0),
+    new THREE.Vector3( 0, 0, 1),
+    new THREE.Vector3( 0, 0,-1),
+    new THREE.Vector3( 0, 1, 0),  // потолок
+  ];
+  const CONFINE_MARGIN = 0.25;
+  const FLOOR_MARGIN   = 0.15;
+
+  function constrainCamera() {
+    if (!currentModel || renderer.xr.isPresenting) return;
+
+    // --- Пол: всегда активно, даже во время анимации ---
+    // Кастуем с 0.6м выше камеры вниз — работает даже если камера уже под полом
+    _confineRay.set(
+      new THREE.Vector3(camera.position.x, camera.position.y + 0.6, camera.position.z),
+      new THREE.Vector3(0, -1, 0)
+    );
+    _confineRay.far = 0.6 + FLOOR_MARGIN;
+    const floorHits = _confineRay.intersectObject(currentModel, true);
+    for (const fh of floorHits) {
+      if (!fh.face) continue;
+      const fn = fh.face.normal.clone().transformDirection(fh.object.matrixWorld).normalize();
+      if (fn.y > 0.5) {
+        const minY = fh.point.y + FLOOR_MARGIN;
+        if (camera.position.y < minY) camera.position.y = minY;
+        break;
+      }
+    }
+
+    // --- Стены и потолок: только вне анимации ---
+    if (navAnimating) return;
+
+    let pushed = false;
+    for (const dir of _wallDirs) {
+      _confineRay.set(camera.position, dir);
+      _confineRay.far = CONFINE_MARGIN;
+      const hits = _confineRay.intersectObject(currentModel, true);
+      if (hits.length > 0) {
+        camera.position.addScaledVector(dir, -(CONFINE_MARGIN - hits[0].distance));
+        pushed = true;
+      }
+    }
+
+    if (pushed && currentMode === 'orbit') {
+      const fwd = new THREE.Vector3();
+      camera.getWorldDirection(fwd);
+      orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
+    }
+  }
+
+  // --- Режим расстановки хотспотов ---
+  let hotspotMode = false;
+  let pendingHotspotPos = null;
+
+  const hotspotPopup   = document.getElementById('hotspot-popup');
+  const hotspotInput   = document.getElementById('hotspot-popup-input');
+  const hotspotBtnOk   = document.getElementById('hotspot-popup-ok');
+  const hotspotBtnCancel = document.getElementById('hotspot-popup-cancel');
+  const btnAddHotspot  = document.getElementById('btn-add-hotspot');
+
+  window.toggleHotspotMode = () => {
+    hotspotMode = !hotspotMode;
+    document.body.classList.toggle('hotspot-mode', hotspotMode);
+    if (btnAddHotspot) btnAddHotspot.classList.toggle('hotspot-active', hotspotMode);
+  };
+
+  function openHotspotPopup(pos) {
+    pendingHotspotPos = pos;
+    hotspotInput.value = '';
+    hotspotPopup.style.display = 'flex';
+    setTimeout(() => hotspotInput.focus(), 50);
+  }
+
+  function closeHotspotPopup() {
+    hotspotPopup.style.display = 'none';
+    pendingHotspotPos = null;
+  }
+
+  hotspotBtnOk.addEventListener('click', () => {
+    const label = hotspotInput.value.trim();
+    if (label && pendingHotspotPos) {
+      addInfoHotspot(pendingHotspotPos, label);
+    }
+    closeHotspotPopup();
+  });
+
+  hotspotBtnCancel.addEventListener('click', closeHotspotPopup);
+
+  hotspotInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') hotspotBtnOk.click();
+    if (e.key === 'Escape') closeHotspotPopup();
+  });
+
+  // Предустановленные хотспоты
+  addInfoHotspot(new THREE.Vector3(-3.652,  2.023,  1.318), 'Dog');
+  addInfoHotspot(new THREE.Vector3(-2.223,  1.946, -3.315), 'Ferris Wheel');
+  addInfoHotspot(new THREE.Vector3(-7.003,  2.022,  0.776), 'Horse');
+  addInfoHotspot(new THREE.Vector3(-8.966,  2.051, -0.960), 'Woman');
+  addInfoHotspot(new THREE.Vector3(-14.604, 1.968, -0.956), 'Car');
+  addInfoHotspot(new THREE.Vector3(-14.310, 2.081,  0.767), 'Boat');
+  addInfoHotspot(new THREE.Vector3(-20.926, 1.538, -0.026), 'Ball');
 
   // ============================================
   // UI
