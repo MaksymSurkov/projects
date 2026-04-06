@@ -344,6 +344,59 @@
 
     canvas { display: block; }
 
+    /* ===== INFO HOTSPOTS ===== */
+    .info-hotspot {
+      position: fixed;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(77, 171, 247, 0.85);
+      border: 2px solid #fff;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      z-index: 15;
+      pointer-events: auto;
+      transition: transform 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .info-hotspot::after {
+      content: 'i';
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .info-hotspot:hover {
+      transform: translate(-50%, -50%) scale(1.25);
+      background: rgba(77, 171, 247, 1);
+    }
+
+    .info-hotspot-label {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.88);
+      color: #e0e0e0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      padding: 6px 14px;
+      border: 1px solid rgba(77, 171, 247, 0.4);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .info-hotspot:hover .info-hotspot-label {
+      opacity: 1;
+    }
+
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
       #hud-top h1 { font-size: 10px; letter-spacing: 2px; }
@@ -411,6 +464,11 @@
 </div>
 
 <div id="crosshair"></div>
+
+<!-- Info hotspots -->
+<div class="info-hotspot" id="hotspot-0" style="display:none">
+  <div class="info-hotspot-label">Собака барабака</div>
+</div>
 <div id="mode-indicator">Orbit Mode</div>
 <div id="position-display"></div>
 <div id="xr-status">Checking WebXR...</div>
@@ -1227,6 +1285,9 @@
         `Z: <span>${camera.position.z.toFixed(1)}</span>`;
     }
 
+    // Info hotspots — проекция 3D → 2D
+    updateInfoHotspots();
+
     renderer.render(scene, camera);
   });
 
@@ -1581,6 +1642,34 @@
       setTimeout(() => { scrollThrottle = false; }, 400);
     };
   }, { passive: false });
+
+  // ============================================
+  // INFO HOTSPOTS
+  // ============================================
+  const infoHotspots = [
+    {
+      position: new THREE.Vector3(-1.0, 3.1, 0.9),
+      el: document.getElementById('hotspot-0')
+    }
+  ];
+
+  function updateInfoHotspots() {
+    if (renderer.xr.isPresenting) {
+      infoHotspots.forEach(hs => { hs.el.style.display = 'none'; });
+      return;
+    }
+    const v = new THREE.Vector3();
+    for (const hs of infoHotspots) {
+      v.copy(hs.position).project(camera);
+      // z > 1 означает что точка за камерой
+      if (v.z > 1) { hs.el.style.display = 'none'; continue; }
+      const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+      hs.el.style.left = x + 'px';
+      hs.el.style.top  = y + 'px';
+      hs.el.style.display = 'flex';
+    }
+  }
 
   // ============================================
   // UI
