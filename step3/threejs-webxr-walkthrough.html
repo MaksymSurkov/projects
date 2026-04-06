@@ -871,6 +871,12 @@
   let _arSavedTarget = new THREE.Vector3();
   let arPlacedModel = null; // клон модели для AR
 
+  function isARSession(session) {
+    if (!session) return false;
+    // Prefer explicit mode when available; fallback to blend mode for compatibility.
+    return session.mode === 'immersive-ar' || session.environmentBlendMode !== 'opaque';
+  }
+
   const arReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.1, 0.15, 32).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0x4dabf7, side: THREE.DoubleSide })
@@ -886,9 +892,10 @@
     const session = renderer.xr.getSession();
     if (!session) return;
 
-    // Определяем AR по наличию hit-test результатов
-    if (arReticle.visible) {
+    if (isARSession(session)) {
       onARSelect();
+    } else {
+      onVRSelect(event);
     }
   }
 
@@ -1088,6 +1095,7 @@
       (error) => {
         console.error('Load error:', error);
         document.getElementById('loading').classList.remove('active');
+        URL.revokeObjectURL(url);
         alert('Failed to load model. Check file format (.glb / .gltf)');
       }
     );
@@ -1209,9 +1217,10 @@
   renderer.xr.addEventListener('sessionstart', () => {
     const session = renderer.xr.getSession();
     if (!session) return;
+    const isAR = isARSession(session);
 
     // Transparent background for AR camera feed
-    if (session.environmentBlendMode !== 'opaque') {
+    if (isAR) {
       renderer.setClearColor(0x000000, 0);
     }
 
@@ -1239,21 +1248,27 @@
     renderer.shadowMap.enabled = false;
     renderer.setPixelRatio(1);
 
-    // Освобождаем GPU-память модели — иначе AR сессия + модель = context loss и краш браузера
-    // CPU-данные (image, arraybuffer) остаются — Three.js перезальёт при следующем рендере
-    if (currentModel) {
-      scene.remove(currentModel);
-      currentModel.traverse(child => {
-        if (!child.isMesh) return;
-        if (child.geometry) child.geometry.dispose();
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(mat => {
-          if (!mat) return;
-          ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','lightMap','envMap']
-            .forEach(k => { if (mat[k] && mat[k].isTexture) mat[k].dispose(); });
-          mat.dispose();
+    if (isAR) {
+      // Убираем модель из сцены только для AR
+      if (currentModel) scene.remove(currentModel);
+
+      // GPU-ресурсы освобождаем через 1с — даём AR время полностью стартовать.
+      // Синхронный dispose() в sessionstart блокирует JS-поток и ломает инициализацию hit-test.
+      setTimeout(() => {
+        if (!renderer.xr.isPresenting) return; // сессия уже завершена — пропускаем
+        if (!currentModel) return;
+        currentModel.traverse(child => {
+          if (!child.isMesh) return;
+          if (child.geometry) child.geometry.dispose();
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(mat => {
+            if (!mat) return;
+            ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','lightMap','envMap']
+              .forEach(k => { if (mat[k] && mat[k].isTexture) mat[k].dispose(); });
+            mat.dispose();
+          });
         });
-      });
+      }, 1000);
     }
 
     // BUG FIX: listener добавляется к session-объекту, который живёт ровно одну сессию —
@@ -2143,7 +2158,10 @@
     isWireframe = !isWireframe;
     if (currentModel) {
       currentModel.traverse((child) => {
-        if (child.isMesh && child.material) child.material.wireframe = isWireframe;
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(mat => { if (mat) mat.wireframe = isWireframe; });
+        }
       });
     }
   };
