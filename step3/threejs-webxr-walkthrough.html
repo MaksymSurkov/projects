@@ -479,6 +479,15 @@
       opacity: 1;
     }
 
+    .hotspot-coords {
+      display: block;
+      margin-top: 4px;
+      font-size: 9px;
+      color: #4dabf7;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
       #hud-top h1 { font-size: 10px; letter-spacing: 2px; }
@@ -1789,18 +1798,21 @@
   const infoHotspots = [];
   const hotspotsContainer = document.getElementById('hotspots-container');
 
-  function createHotspotEl(label) {
+  function createHotspotEl(label, position) {
     const el = document.createElement('div');
     el.className = 'info-hotspot';
     el.style.display = 'none';
-    el.innerHTML = `<div class="info-hotspot-label">${label}</div>`;
+    const coords = `x: ${position.x.toFixed(2)}  y: ${position.y.toFixed(2)}  z: ${position.z.toFixed(2)}`;
+    el.innerHTML = `<div class="info-hotspot-label">${label}<span class="hotspot-coords">${coords}</span></div>`;
     hotspotsContainer.appendChild(el);
     return el;
   }
 
   function addInfoHotspot(position, label) {
-    const el = createHotspotEl(label);
-    infoHotspots.push({ position: position.clone(), el });
+    const p = position.clone();
+    const el = createHotspotEl(label, p);
+    infoHotspots.push({ position: p, el });
+    console.log(`[Hotspot] "${label}" → x: ${p.x.toFixed(3)}, y: ${p.y.toFixed(3)}, z: ${p.z.toFixed(3)}`);
   }
 
   function updateInfoHotspots() {
