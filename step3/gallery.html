@@ -478,7 +478,6 @@
     _arSavedTarget.copy(orbitControls.target);
 
     if (scene.fog) scene.fog.density = 0;
-    // These may already be removed by the pre-click handler — scene.remove is safe to call twice
     scene.remove(grid);
     scene.remove(shadowFloor);
     if (currentModel) scene.remove(currentModel);
@@ -490,6 +489,20 @@
 
     renderer.shadowMap.enabled = false;
     renderer.setPixelRatio(1);
+
+    // Request hit-test source immediately in sessionstart — official Three.js pattern
+    if (isAR) {
+      session.requestReferenceSpace('viewer').then(viewerSpace => {
+        session.requestHitTestSource({ space: viewerSpace }).then(source => {
+          hitTestSource = source;
+          const arHint = document.getElementById('ar-hint');
+          if (arHint) arHint.textContent = 'Move phone slowly · point at floor';
+        }).catch(err => {
+          const arHint = document.getElementById('ar-hint');
+          if (arHint) { arHint.style.display = 'block'; arHint.textContent = 'HIT-TEST ERR: ' + (err && err.message ? err.message : String(err)); }
+        });
+      });
+    }
 
     session.addEventListener('select', () => {
       if (arReticle.visible) onARSelect();
@@ -1037,22 +1050,6 @@
     if (frame) {
       const session = renderer.xr.getSession();
       const refSpace = renderer.xr.getReferenceSpace();
-
-      if (!hitTestSourceRequested && session) {
-        hitTestSourceRequested = true;
-        const arHint = document.getElementById('ar-hint');
-        if (arHint) arHint.textContent = 'Initializing tracking...';
-        session.requestReferenceSpace('viewer').then(vs => {
-          return session.requestHitTestSource({ space: vs });
-        }).then(src => {
-          hitTestSource = src;
-          if (arHint) arHint.textContent = 'Move phone slowly · point at floor';
-        }).catch(err => {
-          hitTestSourceRequested = false;
-          const arHint = document.getElementById('ar-hint');
-          if (arHint) { arHint.style.display = 'block'; arHint.textContent = 'HIT-TEST ERR: ' + (err && err.message ? err.message : String(err)); }
-        });
-      }
 
       if (hitTestSource && refSpace) {
         const results = frame.getHitTestResults(hitTestSource);
