@@ -502,39 +502,9 @@
   });
 
   renderer.xr.addEventListener('sessionend', () => {
-    renderer.setClearColor(0x0d0d14, 1);
-
-    document.getElementById('controls-panel').style.display = 'flex';
-    document.getElementById('ar-hint').style.display = 'none';
-    document.getElementById('vr-hint').style.display = 'none';
-    document.getElementById('mode-indicator').textContent = currentMode === 'fps' ? 'Walk' : 'Orbit';
-
-    if (scene.fog) scene.fog.density = 0.03;
-    hemiLight.intensity = 0.7;
-    dirLight.intensity = 1.3;
-    orbitControls.enabled = true;
-
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.shadowMap.enabled = false;
-
-    if (currentModel) scene.add(currentModel);
-    scene.add(grid);
-    scene.add(shadowFloor);
-    presetWaypoints.forEach(wp => { wp.marker.visible = true; });
-
-    _arRestoreCamera = true;
-
-    if (arPlacedModel) {
-      scene.remove(arPlacedModel);
-      arPlacedModel = null;
-    }
-
-    hitTestSource = null;
-    hitTestSourceRequested = false;
-    arReticle.visible = false;
-    infoHotspots.forEach(hs => hs.el.classList.remove('ar-mode'));
-
-    setTimeout(() => { renderer.shadowMap.enabled = true; }, 2000);
+    // Reload is the only reliable way to restore state after AR on mobile.
+    // Any attempt to manually restore scene/camera leads to white screen or GPU issues.
+    location.reload();
   });
 
   // ── XR BUTTONS ─────────────────────────────────────────────────────
@@ -557,17 +527,6 @@
     });
     arBtn.classList.add('xr-btn');
     document.body.appendChild(arBtn);
-
-    // Free GPU memory BEFORE the XR session allocates its framebuffer.
-    // capture=true → runs before Three.js ARButton handler.
-    arBtn.addEventListener('click', () => {
-      if (renderer.xr.isPresenting) return; // exit path — don't interfere
-      renderer.shadowMap.enabled = false;
-      renderer.setPixelRatio(1);
-      scene.remove(grid);
-      scene.remove(shadowFloor);
-      if (currentModel) scene.remove(currentModel);
-    }, true);
 
     // Status line
     if (!('xr' in navigator)) {
