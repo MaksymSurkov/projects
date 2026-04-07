@@ -1047,7 +1047,11 @@
         }).then(src => {
           hitTestSource = src;
           if (arHint) arHint.textContent = 'Move phone slowly · point at floor';
-        }).catch(() => { hitTestSourceRequested = false; });
+        }).catch(err => {
+          hitTestSourceRequested = false;
+          const arHint = document.getElementById('ar-hint');
+          if (arHint) { arHint.style.display = 'block'; arHint.textContent = 'HIT-TEST ERR: ' + (err && err.message ? err.message : String(err)); }
+        });
       }
 
       if (hitTestSource && refSpace) {
