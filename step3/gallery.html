@@ -267,7 +267,7 @@
   const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
   dirLight.position.set(5, 10, 5);
   dirLight.castShadow = true;
-  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.mapSize.set(1024, 1024);
   dirLight.shadow.camera.near = 0.1; dirLight.shadow.camera.far = 50;
   dirLight.shadow.camera.left = -15; dirLight.shadow.camera.right = 15;
   dirLight.shadow.camera.top = 15;  dirLight.shadow.camera.bottom = -15;
@@ -436,14 +436,15 @@
     const pos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
 
     if (!arPlacedModel) {
+      // Reuse the original model (already removed from scene at sessionstart) — no clone, no extra memory
       const wrapper = new THREE.Group();
       if (currentModel) {
-        const cloned = currentModel.clone();
-        cloned.visible = true;
-        const box = new THREE.Box3().setFromObject(cloned);
+        currentModel.visible = true;
+        // Center model inside wrapper
+        const box = new THREE.Box3().setFromObject(currentModel);
         const center = box.getCenter(new THREE.Vector3());
-        cloned.position.set(-center.x, -box.min.y, -center.z);
-        wrapper.add(cloned);
+        currentModel.position.set(-center.x, -box.min.y, -center.z);
+        wrapper.add(currentModel);
       }
       arPlacedModel = wrapper;
       scene.add(arPlacedModel);
@@ -477,8 +478,10 @@
     _arSavedTarget.copy(orbitControls.target);
 
     if (scene.fog) scene.fog.density = 0;
+    // These may already be removed by the pre-click handler — scene.remove is safe to call twice
     scene.remove(grid);
     scene.remove(shadowFloor);
+    if (currentModel) scene.remove(currentModel);
     hemiLight.intensity = isAR ? 2.0 : 0.7;
     dirLight.intensity  = isAR ? 3.0 : 1.3;
     navReticle.visible = false;
@@ -487,8 +490,6 @@
 
     renderer.shadowMap.enabled = false;
     renderer.setPixelRatio(1);
-
-    if (currentModel) scene.remove(currentModel);
 
     session.addEventListener('select', () => {
       if (arReticle.visible) onARSelect();
@@ -556,6 +557,17 @@
     });
     arBtn.classList.add('xr-btn');
     document.body.appendChild(arBtn);
+
+    // Free GPU memory BEFORE the XR session allocates its framebuffer.
+    // capture=true → runs before Three.js ARButton handler.
+    arBtn.addEventListener('click', () => {
+      if (renderer.xr.isPresenting) return; // exit path — don't interfere
+      renderer.shadowMap.enabled = false;
+      renderer.setPixelRatio(1);
+      scene.remove(grid);
+      scene.remove(shadowFloor);
+      if (currentModel) scene.remove(currentModel);
+    }, true);
 
     // Status line
     if (!('xr' in navigator)) {
