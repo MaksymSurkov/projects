@@ -19,7 +19,6 @@
 
     canvas { display: block; }
 
-    /* ===== HUD ===== */
     #crosshair {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -27,8 +26,7 @@
       pointer-events: none; display: none;
     }
     #crosshair::before, #crosshair::after {
-      content: ''; position: absolute;
-      background: rgba(255,255,255,0.5);
+      content: ''; position: absolute; background: rgba(255,255,255,0.5);
     }
     #crosshair::before { width: 1px; height: 100%; left: 50%; }
     #crosshair::after  { width: 100%; height: 1px; top: 50%; }
@@ -41,7 +39,6 @@
       backdrop-filter: blur(10px);
     }
 
-    /* ===== CONTROLS PANEL ===== */
     #controls-panel {
       position: fixed;
       bottom: 16px; bottom: calc(16px + env(safe-area-inset-bottom));
@@ -63,7 +60,6 @@
     .btn:hover { background: rgba(77,171,247,0.1); border-color: #4dabf7; color: #4dabf7; }
     .btn.active { background: rgba(77,171,247,0.15); border-color: #4dabf7; color: #4dabf7; }
 
-    /* ===== XR BUTTONS ===== */
     .xr-btn {
       background: rgba(77,171,247,0.1) !important;
       border: 1px solid rgba(77,171,247,0.3) !important;
@@ -94,7 +90,6 @@
     }
     #xr-status.ok { color: #4dabf7; }
 
-    /* ===== WALK HINT ===== */
     #fps-hint {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -112,7 +107,6 @@
     }
     #fps-hint .note { margin-top: 14px; font-size: 10px; color: #4dabf7; letter-spacing: 2px; }
 
-    /* ===== AR HINT ===== */
     #ar-hint {
       display: none; position: fixed; bottom: 30%; left: 50%;
       transform: translateX(-50%); z-index: 30; color: #fff;
@@ -122,7 +116,6 @@
       pointer-events: none;
     }
 
-    /* ===== VR HINT ===== */
     #vr-hint {
       display: none; position: fixed; bottom: 30%; left: 50%;
       transform: translateX(-50%); z-index: 30; color: #fff;
@@ -132,7 +125,6 @@
       pointer-events: none;
     }
 
-    /* ===== LOADING ===== */
     #loading {
       position: fixed; inset: 0; z-index: 200;
       background: #0d0d14;
@@ -149,7 +141,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ===== INFO HOTSPOTS ===== */
     #hotspots-container { position: fixed; inset: 0; pointer-events: none; z-index: 15; }
 
     .info-hotspot {
@@ -170,12 +161,10 @@
       opacity: 0; transition: opacity 0.15s;
     }
     .info-hotspot:hover .info-hotspot-label { opacity: 1; }
-
     .info-hotspot.ar-mode { width: 18px; height: 18px; border-width: 1.5px; }
     .info-hotspot.ar-mode::after { font-size: 9px; }
     .info-hotspot.ar-mode .info-hotspot-label { font-size: 9px; padding: 3px 8px; bottom: 22px; }
 
-    /* ===== MOBILE ===== */
     @media (max-width: 600px) {
       .btn { font-size: 9px; padding: 10px 11px; }
       #VRButton { left: 50% !important; transform: translateX(calc(-100% - 5px)) !important; }
@@ -229,25 +218,19 @@
 
 <script type="module">
   import * as THREE from 'three';
-  import { OrbitControls }       from 'three/addons/controls/OrbitControls.js';
-  import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-  import { GLTFLoader }          from 'three/addons/loaders/GLTFLoader.js';
-  import { DRACOLoader }         from 'three/addons/loaders/DRACOLoader.js';
-  import { VRButton }            from 'three/addons/webxr/VRButton.js';
-  import { ARButton }            from 'three/addons/webxr/ARButton.js';
+  import { OrbitControls }            from 'three/addons/controls/OrbitControls.js';
+  import { PointerLockControls }      from 'three/addons/controls/PointerLockControls.js';
+  import { GLTFLoader }               from 'three/addons/loaders/GLTFLoader.js';
+  import { DRACOLoader }              from 'three/addons/loaders/DRACOLoader.js';
+  import { VRButton }                 from 'three/addons/webxr/VRButton.js';
+  import { ARButton }                 from 'three/addons/webxr/ARButton.js';
   import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
-  const _params   = new URLSearchParams(location.search);
-  const _isEmbed  = _params.get('embed') === '1';   // iframe mode — no XR buttons
-  const _autoAR   = _params.get('ar')    === '1';   // direct link — show AR prompt
+  const _params  = new URLSearchParams(location.search);
+  const _isEmbed = _params.get('embed') === '1';
+  const _autoAR  = _params.get('ar')    === '1';
 
-  // ── SCENE ──────────────────────────────────────────────────────────
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0d0d14, 0.03);
-
-  const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.01, 500);
-  camera.position.set(0, 1.7, 5);
-
+  // ── RENDERER ───────────────────────────────────────────────────────
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -260,6 +243,13 @@
   renderer.xr.enabled = true;
   document.body.appendChild(renderer.domElement);
 
+  // ── SCENE ──────────────────────────────────────────────────────────
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0d0d14, 0.03);
+
+  const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.01, 500);
+  camera.position.set(0, 1.7, 5);
+
   // ── LIGHTS ─────────────────────────────────────────────────────────
   const hemiLight = new THREE.HemisphereLight(0xd0e0f0, 0x2a2a3a, 0.7);
   scene.add(hemiLight);
@@ -270,9 +260,8 @@
   dirLight.shadow.mapSize.set(1024, 1024);
   dirLight.shadow.camera.near = 0.1; dirLight.shadow.camera.far = 50;
   dirLight.shadow.camera.left = -15; dirLight.shadow.camera.right = 15;
-  dirLight.shadow.camera.top = 15;  dirLight.shadow.camera.bottom = -15;
+  dirLight.shadow.camera.top  =  15; dirLight.shadow.camera.bottom = -15;
   scene.add(dirLight);
-  scene.add(new THREE.DirectionalLight(0x4dabf7, 0.3).position.set(-5,3,-5) && new THREE.DirectionalLight(0x4dabf7, 0.3));
 
   const fillLight = new THREE.DirectionalLight(0x4dabf7, 0.3);
   fillLight.position.set(-5, 3, -5);
@@ -302,15 +291,15 @@
   let currentMode = 'orbit';
   const WALK_SPEED = 3.0, RUN_SPEED = 7.0, PLAYER_HEIGHT = 1.7;
   const keys = { forward: false, backward: false, left: false, right: false, shift: false };
-  const velocity = new THREE.Vector3();
+  const velocity  = new THREE.Vector3();
   const direction = new THREE.Vector3();
 
   function setOrbitMode() {
     currentMode = 'orbit';
     orbitControls.enabled = true;
     fpsControls.unlock();
-    document.getElementById('crosshair').style.display = 'none';
-    document.getElementById('fps-hint').style.display = 'none';
+    document.getElementById('crosshair').style.display  = 'none';
+    document.getElementById('fps-hint').style.display   = 'none';
     document.getElementById('mode-indicator').textContent = 'Orbit';
     document.getElementById('btn-orbit').classList.add('active');
     document.getElementById('btn-walk').classList.remove('active');
@@ -321,7 +310,7 @@
     currentMode = 'fps';
     orbitControls.enabled = false;
     camera.position.y = Math.max(camera.position.y, PLAYER_HEIGHT);
-    document.getElementById('fps-hint').style.display = 'block';
+    document.getElementById('fps-hint').style.display   = 'block';
     document.getElementById('mode-indicator').textContent = 'Walk';
     document.getElementById('btn-orbit').classList.remove('active');
     document.getElementById('btn-walk').classList.add('active');
@@ -332,38 +321,37 @@
   window.lockPointer = lockPointer;
 
   fpsControls.addEventListener('lock', () => {
-    document.getElementById('fps-hint').style.display = 'none';
-    document.getElementById('crosshair').style.display = 'block';
+    document.getElementById('fps-hint').style.display    = 'none';
+    document.getElementById('crosshair').style.display   = 'block';
   });
   fpsControls.addEventListener('unlock', () => {
-    document.getElementById('crosshair').style.display = 'none';
+    document.getElementById('crosshair').style.display   = 'none';
     if (currentMode === 'fps') document.getElementById('fps-hint').style.display = 'block';
   });
 
   document.addEventListener('keydown', e => {
-    if (e.code === 'KeyW' || e.code === 'ArrowUp')    keys.forward = true;
-    if (e.code === 'KeyS' || e.code === 'ArrowDown')  keys.backward = true;
-    if (e.code === 'KeyA' || e.code === 'ArrowLeft')  keys.left = true;
-    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.shift = true;
+    if (e.code === 'KeyW'     || e.code === 'ArrowUp')    keys.forward   = true;
+    if (e.code === 'KeyS'     || e.code === 'ArrowDown')  keys.backward  = true;
+    if (e.code === 'KeyA'     || e.code === 'ArrowLeft')  keys.left      = true;
+    if (e.code === 'KeyD'     || e.code === 'ArrowRight') keys.right     = true;
+    if (e.code === 'ShiftLeft'|| e.code === 'ShiftRight') keys.shift     = true;
     if (e.code === 'Escape' && currentMode === 'fps') setOrbitMode();
     if (e.code === 'Space') e.preventDefault();
   });
   document.addEventListener('keyup', e => {
-    if (e.code === 'KeyW' || e.code === 'ArrowUp')    keys.forward = false;
-    if (e.code === 'KeyS' || e.code === 'ArrowDown')  keys.backward = false;
-    if (e.code === 'KeyA' || e.code === 'ArrowLeft')  keys.left = false;
-    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.shift = false;
+    if (e.code === 'KeyW'     || e.code === 'ArrowUp')    keys.forward   = false;
+    if (e.code === 'KeyS'     || e.code === 'ArrowDown')  keys.backward  = false;
+    if (e.code === 'KeyA'     || e.code === 'ArrowLeft')  keys.left      = false;
+    if (e.code === 'KeyD'     || e.code === 'ArrowRight') keys.right     = false;
+    if (e.code === 'ShiftLeft'|| e.code === 'ShiftRight') keys.shift     = false;
   });
 
   // ── VR CONTROLLERS ─────────────────────────────────────────────────
-  const cmFactory = new XRControllerModelFactory();
-
   const ctrl0 = renderer.xr.getController(0);
   const ctrl1 = renderer.xr.getController(1);
   scene.add(ctrl0); scene.add(ctrl1);
-  scene.add(renderer.xr.getControllerGrip(0)); scene.add(renderer.xr.getControllerGrip(1));
+  scene.add(renderer.xr.getControllerGrip(0));
+  scene.add(renderer.xr.getControllerGrip(1));
 
   const lineGeo = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)
@@ -372,57 +360,43 @@
   ctrl0.add(new THREE.Line(lineGeo.clone(), lineMat.clone()));
   ctrl1.add(new THREE.Line(lineGeo.clone(), lineMat.clone()));
 
-  // VR teleport — официальный паттерн Three.js
-  // Сохраняем baseReferenceSpace при старте сессии для корректного телепорта
-  let baseReferenceSpace = null;
+  // VR teleport — saves base reference space at session start for correct offset teleport
+  let vrBaseReferenceSpace = null;
+
+  renderer.xr.addEventListener('sessionstart', () => {
+    vrBaseReferenceSpace = renderer.xr.getReferenceSpace();
+  });
 
   function onVRSelect(event) {
     if (!currentModel) return;
     const controller = event.target;
-
     const mat = new THREE.Matrix4().identity().extractRotation(controller.matrixWorld);
     const ray = new THREE.Raycaster();
     ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);
     ray.ray.direction.set(0, 0, -1).applyMatrix4(mat);
 
-    const hits = ray.intersectObject(currentModel, true);
-    for (const hit of hits) {
+    for (const hit of ray.intersectObject(currentModel, true)) {
       if (!hit.face) continue;
-      // Проверяем мировую нормаль (не локальную!)
-      const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-      if (worldNormal.y < 0.7) continue;
-
-      const pos = hit.point;
-      // Корректный телепорт: сдвигаем reference space так чтобы игрок оказался над точкой
-      const ref = baseReferenceSpace || renderer.xr.getReferenceSpace();
+      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+      if (wn.y < 0.7) continue;
+      const ref = vrBaseReferenceSpace || renderer.xr.getReferenceSpace();
       if (!ref) break;
-      const transform = new XRRigidTransform({ x: -pos.x, y: -pos.y, z: -pos.z, w: 1 });
-      renderer.xr.setReferenceSpace(ref.getOffsetReferenceSpace(transform));
+      const t = new XRRigidTransform({ x: -hit.point.x, y: -hit.point.y, z: -hit.point.z, w: 1 });
+      renderer.xr.setReferenceSpace(ref.getOffsetReferenceSpace(t));
       break;
     }
   }
 
-  ctrl0.addEventListener('select', e => {
-    if (!renderer.xr.isPresenting) return;
-    // AR: arReticle видим → размещаем модель
-    if (arReticle.visible) { onARSelect(); return; }
-    // VR: телепорт
-    onVRSelect(e);
-  });
-  ctrl1.addEventListener('select', e => {
-    if (!renderer.xr.isPresenting) return;
-    if (arReticle.visible) { onARSelect(); return; }
-    onVRSelect(e);
-  });
-
   // ── AR ─────────────────────────────────────────────────────────────
-  let hitTestSource = null;
+  // Hit-test state — reset each session, initialised lazily on first XR frame
+  // (exact official Three.js webxr_ar_hittest.html pattern)
+  let hitTestSource          = null;
   let hitTestSourceRequested = false;
-  let arPlacedModel = null;
-  let _arSavedCamPos = new THREE.Vector3();
-  let _arSavedTarget = new THREE.Vector3();
-  let _arRestoreCamera = false;
 
+  // Model placed in AR scene
+  let arPlacedModel = null;
+
+  // AR reticle (blue ring)
   const arReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.1, 0.15, 32).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0x4dabf7, side: THREE.DoubleSide })
@@ -436,12 +410,11 @@
     const pos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
 
     if (!arPlacedModel) {
-      // Reuse the original model (already removed from scene at sessionstart) — no clone, no extra memory
       const wrapper = new THREE.Group();
       if (currentModel) {
+        // Use original model — already removed from scene at sessionstart
         currentModel.visible = true;
-        // Center model inside wrapper
-        const box = new THREE.Box3().setFromObject(currentModel);
+        const box    = new THREE.Box3().setFromObject(currentModel);
         const center = box.getCenter(new THREE.Vector3());
         currentModel.position.set(-center.x, -box.min.y, -center.z);
         wrapper.add(currentModel);
@@ -456,78 +429,59 @@
     document.getElementById('ar-hint').style.display = 'none';
   }
 
-  // ── XR SESSION EVENTS ──────────────────────────────────────────────
+  // Controllers handle both AR placement and VR teleport
+  ctrl0.addEventListener('select', e => {
+    if (!renderer.xr.isPresenting) return;
+    if (arReticle.visible) { onARSelect(); return; }
+    onVRSelect(e);
+  });
+  ctrl1.addEventListener('select', e => {
+    if (!renderer.xr.isPresenting) return;
+    if (arReticle.visible) { onARSelect(); return; }
+    onVRSelect(e);
+  });
+
+  // Screen tap in AR (dom-overlay) also places model
   renderer.xr.addEventListener('sessionstart', () => {
     const session = renderer.xr.getSession();
     if (!session) return;
-
-    baseReferenceSpace = renderer.xr.getReferenceSpace();
-
     const isAR = session.environmentBlendMode !== 'opaque';
-    if (isAR) {
-      renderer.setClearColor(0x000000, 0);
-      document.getElementById('ar-hint').style.display = 'block';
-      document.getElementById('vr-hint').style.display = 'none';
-    } else {
-      // VR
-      document.getElementById('vr-hint').style.display = 'block';
-      document.getElementById('ar-hint').style.display = 'none';
-    }
+    if (!isAR) return;
 
-    _arSavedCamPos.copy(camera.position);
-    _arSavedTarget.copy(orbitControls.target);
+    // Show AR hint
+    document.getElementById('ar-hint').style.display = 'block';
+    document.getElementById('vr-hint').style.display = 'none';
 
+    // Transparent background for AR camera passthrough
+    renderer.setClearColor(0x000000, 0);
+
+    // Reduce GPU load before XR framebuffer is allocated
+    renderer.shadowMap.enabled = false;
+    renderer.setPixelRatio(1);
     if (scene.fog) scene.fog.density = 0;
     scene.remove(grid);
     scene.remove(shadowFloor);
-    if (currentModel) scene.remove(currentModel);
-    hemiLight.intensity = isAR ? 2.0 : 0.7;
-    dirLight.intensity  = isAR ? 3.0 : 1.3;
-    navReticle.visible = false;
+    if (currentModel) { currentModel.visible = false; scene.remove(currentModel); }
     orbitControls.enabled = false;
+    navReticle.visible = false;
     presetWaypoints.forEach(wp => { wp.marker.visible = false; });
 
-    renderer.shadowMap.enabled = false;
-    renderer.setPixelRatio(1);
-
-    // Request hit-test source immediately in sessionstart — official Three.js pattern
-    if (isAR) {
-      session.requestReferenceSpace('viewer').then(viewerSpace => {
-        session.requestHitTestSource({ space: viewerSpace }).then(source => {
-          hitTestSource = source;
-          const arHint = document.getElementById('ar-hint');
-          if (arHint) arHint.textContent = 'Move phone slowly · point at floor';
-        }).catch(err => {
-          const arHint = document.getElementById('ar-hint');
-          if (arHint) { arHint.style.display = 'block'; arHint.textContent = 'HIT-TEST ERR: ' + (err && err.message ? err.message : String(err)); }
-        });
-      });
-    }
-
+    // dom-overlay tap → place model
     session.addEventListener('select', () => {
       if (arReticle.visible) onARSelect();
-    });
-    session.addEventListener('end', () => {
-      hitTestSource = null;
-      hitTestSourceRequested = false;
-      baseReferenceSpace = null;
     });
   });
 
   renderer.xr.addEventListener('sessionend', () => {
-    // Reload is the only reliable way to restore state after AR on mobile.
-    // Any attempt to manually restore scene/camera leads to white screen or GPU issues.
+    // Reload is the only reliable way to restore state after AR on mobile
     location.reload();
   });
 
   // ── XR BUTTONS ─────────────────────────────────────────────────────
-  // In embed mode (?embed=1) — no XR buttons at all.
-  // In standalone mode — use Three.js VRButton/ARButton (battle-tested).
-  // In ?ar=1 mode — additionally show an AR launch overlay on top.
   const xrSt = document.getElementById('xr-status');
 
   if (_isEmbed) {
-    if (xrSt) xrSt.style.display = 'none';
+    xrSt.style.display = 'none';
   } else {
     const vrBtn = VRButton.createButton(renderer);
     vrBtn.classList.add('xr-btn');
@@ -541,7 +495,6 @@
     arBtn.classList.add('xr-btn');
     document.body.appendChild(arBtn);
 
-    // Status line
     if (!('xr' in navigator)) {
       xrSt.textContent = 'WebXR not supported';
     } else {
@@ -553,13 +506,12 @@
         xrSt.textContent = `VR ${hasVR ? '✓' : '✗'} · AR ${hasAR ? '✓' : '✗'}`;
         if (hasVR || hasAR) xrSt.classList.add('ok');
 
-        // ?ar=1 — show a big tap-to-start AR overlay so user doesn't miss the button
         if (_autoAR && hasAR) {
           const ov = document.createElement('div');
           ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-family:inherit;';
           ov.innerHTML = `
             <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#4dabf7;">Augmented Reality</div>
-            <div style="font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;">Point your camera at a flat surface · tap to place</div>
+            <div style="font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;">Point camera at a flat surface · tap to place</div>
             <button style="background:rgba(77,171,247,0.15);border:1px solid #4dabf7;color:#4dabf7;font-family:inherit;font-size:12px;letter-spacing:3px;text-transform:uppercase;padding:18px 48px;cursor:pointer;">TAP TO START AR</button>`;
           document.body.appendChild(ov);
           ov.querySelector('button').addEventListener('click', () => { ov.remove(); arBtn.click(); });
@@ -569,7 +521,7 @@
   }
 
   // ── MODEL ──────────────────────────────────────────────────────────
-  const gltfLoader = new GLTFLoader();
+  const gltfLoader  = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
   gltfLoader.setDRACOLoader(dracoLoader);
@@ -584,11 +536,11 @@
         if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
       });
 
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
+      const box    = new THREE.Box3().setFromObject(model);
+      const size   = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       let scale = 1;
-      if (maxDim < 1) scale = 5 / maxDim;
+      if (maxDim < 1)   scale = 5  / maxDim;
       else if (maxDim > 100) scale = 20 / maxDim;
       model.scale.setScalar(scale);
 
@@ -606,7 +558,6 @@
       startInsideRoom();
 
       document.getElementById('loading').classList.add('hidden');
-      document.getElementById('position-display') && (document.getElementById('position-display').style.display = 'block');
     },
     prog => {
       if (prog.total > 0) {
@@ -646,7 +597,7 @@
   let currentWpIndex = -1;
 
   function createPresetMarker() {
-    const g = new THREE.Group();
+    const g    = new THREE.Group();
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.22, 0.32, 32).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, depthTest: false, side: THREE.DoubleSide })
@@ -662,10 +613,10 @@
   }
 
   function findFloorY(model, x, z, top) {
-    const ray = new THREE.Raycaster();
+    const ray  = new THREE.Raycaster();
     ray.set(new THREE.Vector3(x, top, z), new THREE.Vector3(0, -1, 0));
     const hits = ray.intersectObject(model, true);
-    let best = null;
+    let best   = null;
     for (const hit of hits) {
       if (!hit.face) continue;
       const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
@@ -676,9 +627,9 @@
 
   function isInsideBuilding(model, pos, maxD) {
     const origin = pos.clone(); origin.y += 1;
-    const dirs = [new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1)];
-    const ray = new THREE.Raycaster(); ray.far = maxD;
-    let walls = 0;
+    const dirs   = [new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1)];
+    const ray    = new THREE.Raycaster(); ray.far = maxD;
+    let walls    = 0;
     for (const d of dirs) { ray.set(origin, d); if (ray.intersectObject(model, true).length > 0) walls++; }
     return walls >= 2;
   }
@@ -702,13 +653,13 @@
 
     allY.sort((a, b) => a - b);
     const floorY = allY[Math.floor(allY.length * 0.1)];
-    const tol = Math.max(0.4, size.y * 0.08);
+    const tol    = Math.max(0.4, size.y * 0.08);
     const groundPts = floorPts.filter(p => Math.abs(p.y - floorY) <= tol);
     if (groundPts.length < 3) return;
 
-    const maxD = Math.min(25, Math.max(size.x, size.z) * 0.4);
+    const maxD     = Math.min(25, Math.max(size.x, size.z) * 0.4);
     const interior = groundPts.filter(p => isInsideBuilding(model, p, maxD));
-    const pts = interior.length >= 3 ? interior : groundPts;
+    const pts      = interior.length >= 3 ? interior : groundPts;
 
     let ptA = pts[0], maxD1 = 0;
     for (const p of pts) { const d = p.distanceTo(pts[0]); if (d > maxD1) { maxD1 = d; ptA = p; } }
@@ -734,10 +685,10 @@
   function startInsideRoom() {
     if (!presetWaypoints.length) return;
     currentWpIndex = 0;
-    const p = presetWaypoints[0].position;
+    const p    = presetWaypoints[0].position;
     camera.position.set(p.x, p.y + PLAYER_HEIGHT, p.z);
     const look = presetWaypoints.length > 1 ? presetWaypoints[1].position : new THREE.Vector3(p.x+1, p.y, p.z);
-    const fwd = new THREE.Vector3(look.x - p.x, 0, look.z - p.z).normalize();
+    const fwd  = new THREE.Vector3(look.x - p.x, 0, look.z - p.z).normalize();
     if (fwd.length() < 0.01) fwd.set(0, 0, -1);
     orbitControls.target.copy(camera.position).addScaledVector(fwd, 2.0);
     orbitControls.update();
@@ -754,12 +705,12 @@
 
   function flyToHotspot(hs) {
     if (!currentModel) return;
-    const origin = hs.position.clone(); origin.y += 0.05;
+    const origin  = hs.position.clone(); origin.y += 0.05;
     const scanRay = new THREE.Raycaster(); scanRay.far = 30;
-    let wallDir = new THREE.Vector3(1, 0, 0), minDist = Infinity;
+    let wallDir   = new THREE.Vector3(1, 0, 0), minDist = Infinity;
     for (let i = 0; i < 24; i++) {
       const angle = (i / 24) * Math.PI * 2;
-      const dir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+      const dir   = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
       scanRay.set(origin, dir);
       const hits = scanRay.intersectObject(currentModel, true);
       if (hits.length > 0 && hits[0].distance < minDist) { minDist = hits[0].distance; wallDir = dir.clone(); }
@@ -776,9 +727,9 @@
 
   // ── MOUSE NAVIGATION ───────────────────────────────────────────────
   const navRaycaster = new THREE.Raycaster();
-  const navMouse = new THREE.Vector2();
-  let navMouseDownX = 0, navMouseDownY = 0;
-  const _up = new THREE.Vector3(0, 1, 0);
+  const navMouse     = new THREE.Vector2();
+  let navMouseDownX  = 0, navMouseDownY = 0;
+  const _up          = new THREE.Vector3(0, 1, 0);
 
   renderer.domElement.addEventListener('mousedown', e => { navMouseDownX = e.clientX; navMouseDownY = e.clientY; });
 
@@ -792,13 +743,13 @@
       }
       renderer.domElement.style.cursor = 'default'; return;
     }
-    navMouse.x = (e.clientX / innerWidth) * 2 - 1;
-    navMouse.y = -(e.clientY / innerHeight) * 2 + 1;
+    navMouse.x = (e.clientX / innerWidth)  *  2 - 1;
+    navMouse.y = (e.clientY / innerHeight) * -2 + 1;
     navRaycaster.setFromCamera(navMouse, camera);
 
     const wpMeshes = [];
     presetWaypoints.forEach(wp => wp.marker.children.forEach(c => wpMeshes.push(c)));
-    const wpHits = navRaycaster.intersectObjects(wpMeshes);
+    const wpHits   = navRaycaster.intersectObjects(wpMeshes);
 
     if (hoveredWaypoint) {
       hoveredWaypoint.marker.children[0].material.opacity = 0.25;
@@ -824,7 +775,7 @@
 
     for (const hit of hits) {
       if (!hit.face) continue;
-      const wn = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
+      const wn     = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
       const isFloor = wn.y > 0.5, isWall = Math.abs(wn.y) < 0.3;
       if (!isFloor && !isWall) continue;
 
@@ -837,9 +788,9 @@
         navHitPoint = hit.point.clone();
       } else {
         const base = hit.point.clone().addScaledVector(wn, 0.5);
-        const dr = new THREE.Raycaster(base.clone().setY(base.y + 0.5), new THREE.Vector3(0,-1,0));
-        const fh = dr.intersectObject(currentModel, true);
-        let fy = base.y;
+        const dr   = new THREE.Raycaster(base.clone().setY(base.y + 0.5), new THREE.Vector3(0,-1,0));
+        const fh   = dr.intersectObject(currentModel, true);
+        let fy     = base.y;
         for (const f of fh) {
           if (!f.face) continue;
           const fn = f.face.normal.clone().transformDirection(f.object.matrixWorld).normalize();
@@ -861,7 +812,7 @@
   });
 
   renderer.domElement.addEventListener('click', e => {
-    if (renderer.xr.isPresenting || currentMode === 'fps' && fpsControls.isLocked) return;
+    if (renderer.xr.isPresenting || (currentMode === 'fps' && fpsControls.isLocked)) return;
     const dx = e.clientX - navMouseDownX, dy = e.clientY - navMouseDownY;
     if (Math.sqrt(dx*dx + dy*dy) > 5) return;
     if (hoveredWaypoint) { currentWpIndex = presetWaypoints.indexOf(hoveredWaypoint); flyTo(hoveredWaypoint.position); return; }
@@ -872,14 +823,14 @@
   renderer.domElement.addEventListener('wheel', e => {
     e.preventDefault();
     if (renderer.xr.isPresenting || !presetWaypoints.length || scrollThrottle || navAnimating) return;
-    const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+    const fwd     = new THREE.Vector3(); camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
     const pathDir = new THREE.Vector3().subVectors(
       presetWaypoints[presetWaypoints.length-1].position, presetWaypoints[0].position
     ).normalize();
     const aligned = fwd.dot(pathDir) >= 0;
-    const rawDir = e.deltaY > 0 ? -1 : 1;
-    const dir = aligned ? rawDir : -rawDir;
-    const next = currentWpIndex + dir;
+    const rawDir  = e.deltaY > 0 ? -1 : 1;
+    const dir     = aligned ? rawDir : -rawDir;
+    const next    = currentWpIndex + dir;
     if (next < 0 || next >= presetWaypoints.length) return;
     scrollThrottle = true; currentWpIndex = next;
     flyTo(presetWaypoints[currentWpIndex].position);
@@ -888,7 +839,7 @@
 
   // ── INFO HOTSPOTS ──────────────────────────────────────────────────
   const infoHotspots = [];
-  const hsContainer = document.getElementById('hotspots-container');
+  const hsContainer  = document.getElementById('hotspots-container');
 
   function addInfoHotspot(position, label) {
     const el = document.createElement('div');
@@ -923,7 +874,7 @@
           arPlacedModel.localToWorld(_hsWorld);
           _hsScrn.copy(_hsWorld).project(camera);
           if (_hsScrn.z > 1) { hs.el.style.display = 'none'; continue; }
-          hs.el.style.left = (_hsScrn.x * 0.5 + 0.5) * innerWidth + 'px';
+          hs.el.style.left = (_hsScrn.x * 0.5 + 0.5) * innerWidth  + 'px';
           hs.el.style.top  = (-_hsScrn.y * 0.5 + 0.5) * innerHeight + 'px';
           hs.el.classList.add('ar-mode');
           hs.el.style.display = 'flex';
@@ -945,7 +896,7 @@
       const dist = toHs.length();
       _occRay.set(camPos, toHs.normalize()); _occRay.far = dist - 0.08;
       if (_occRay.intersectObject(currentModel, true).length > 0) { hs.el.style.display = 'none'; continue; }
-      hs.el.style.left = (_hsScrn.x * 0.5 + 0.5) * innerWidth + 'px';
+      hs.el.style.left = (_hsScrn.x * 0.5 + 0.5) * innerWidth  + 'px';
       hs.el.style.top  = (-_hsScrn.y * 0.5 + 0.5) * innerHeight + 'px';
       hs.el.classList.remove('ar-mode');
       hs.el.style.display = 'flex';
@@ -953,7 +904,7 @@
   }
 
   // ── CAMERA CONFINE ─────────────────────────────────────────────────
-  const _confRay = new THREE.Raycaster();
+  const _confRay  = new THREE.Raycaster();
   const _wallDirs = [
     new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0),
     new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1),
@@ -989,23 +940,15 @@
   renderer.setAnimationLoop((timestamp, frame) => {
     const delta = clock.getDelta();
 
-    // Восстановление камеры после выхода из AR/VR
-    if (_arRestoreCamera && !renderer.xr.isPresenting) {
-      _arRestoreCamera = false;
-      camera.position.copy(_arSavedCamPos);
-      orbitControls.target.copy(_arSavedTarget);
-      orbitControls.update();
-    }
-
     if (!renderer.xr.isPresenting) {
       if (currentMode === 'fps' && fpsControls.isLocked) {
         const speed = keys.shift ? RUN_SPEED : WALK_SPEED;
         velocity.x *= 0.85; velocity.z *= 0.85;
-        direction.z = Number(keys.forward) - Number(keys.backward);
-        direction.x = Number(keys.right)   - Number(keys.left);
+        direction.z = Number(keys.forward)  - Number(keys.backward);
+        direction.x = Number(keys.right)    - Number(keys.left);
         direction.normalize();
-        if (keys.forward || keys.backward) velocity.z -= direction.z * speed * delta;
-        if (keys.left    || keys.right)    velocity.x -= direction.x * speed * delta;
+        if (keys.forward  || keys.backward) velocity.z -= direction.z * speed * delta;
+        if (keys.left     || keys.right)    velocity.x -= direction.x * speed * delta;
         fpsControls.moveRight(-velocity.x);
         fpsControls.moveForward(-velocity.z);
       }
@@ -1018,7 +961,6 @@
       }
     }
 
-    // Перелёт
     if (navAnimating) {
       navAnimProgress = Math.min(navAnimProgress + delta * 1.8, 1);
       const t = navAnimProgress < 0.5
@@ -1030,13 +972,11 @@
       if (navAnimProgress >= 1) { navAnimating = false; if (typeof onNavAnimEnd === 'function') onNavAnimEnd(); }
     }
 
-    // Пульс reticle
     if (navReticle.visible) {
       const pulse = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 4);
       navRing.material.opacity = pulse * 0.85;
     }
 
-    // Пульс маркеров
     if (presetWaypoints.length > 0 && !renderer.xr.isPresenting) {
       const sp = 0.15 + 0.1 * Math.sin(clock.elapsedTime * 1.5);
       presetWaypoints.forEach(wp => {
@@ -1046,22 +986,34 @@
       });
     }
 
-    // AR hit-test
+    // ── AR HIT-TEST (exact official Three.js webxr_ar_hittest.html pattern) ──
     if (frame) {
-      const session = renderer.xr.getSession();
-      const refSpace = renderer.xr.getReferenceSpace();
+      const referenceSpace = renderer.xr.getReferenceSpace(); // fresh each frame
+      const session        = renderer.xr.getSession();
 
-      if (hitTestSource && refSpace) {
+      if (!hitTestSourceRequested) {
+        hitTestSourceRequested = true; // set synchronously to prevent duplicate requests
+
+        session.requestReferenceSpace('viewer').then(viewerSpace => {
+          session.requestHitTestSource({ space: viewerSpace }).then(source => {
+            hitTestSource = source;
+          });
+        });
+
+        // Clean up when session ends
+        session.addEventListener('end', () => {
+          hitTestSourceRequested = false;
+          hitTestSource = null;
+        });
+      }
+
+      if (hitTestSource) {
         const results = frame.getHitTestResults(hitTestSource);
         if (results.length > 0) {
-          const pose = results[0].getPose(refSpace);
-          if (pose) {
-            arReticle.visible = true;
-            arReticle.matrix.fromArray(pose.transform.matrix);
-            arReticle.matrixWorldNeedsUpdate = true;
-            const arHint = document.getElementById('ar-hint');
-            if (arHint) arHint.style.display = 'none';
-          }
+          const hit = results[0];
+          arReticle.visible = true;
+          arReticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
+          arReticle.matrixWorldNeedsUpdate = true;
         } else {
           arReticle.visible = false;
         }
