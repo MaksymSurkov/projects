@@ -34,7 +34,11 @@
     --ease-out:cubic-bezier(.2,.7,.2,1);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
+  html{
+    scroll-behavior:smooth;                                                                                                                                                                                                             
+    background:#0b0908;           /* warm near-black — тот же что у body */
+    overscroll-behavior:none;     /* отключает rubber-band полностью на компах + iOS */
+  }
   body{
     background:#0b0908;
     background:
