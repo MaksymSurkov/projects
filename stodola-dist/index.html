@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>STODOLA — česká pop-rocková kapela z Pardubic</title>
+<meta name="description" content="STODOLA — pětičlenná pop-rocková kapela z Pardubic. Tři kytary, jeden groove. Singly Nový Ráno a Hluboká Voda." />
+<link rel="icon" type="image/png" href="assets/vinyl.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<noscript><style>.reveal{opacity:1!important}.line-inner{transform:none!important}.hero-word .ch{opacity:1!important}#preloader{display:none!important}</style></noscript>
+<style>
+  :root{
+    --black:#000;
+    --bg:#0b0908;        /* warm near-black */
+    --panel:#13100d;     /* lifted warm panel */
+    --panel-2:#1a1510;
+    --beton:#58595b;        /* PANTONE Cool Gray 10 C — logomanuál str. 14 */
+    --beton-80:#6f7072;     /* 80% transparency on white */
+    --beton-60:#8c8d8f;     /* 60% */
+    --beton-40:#abacae;     /* 40% */
+    --beton-30:#c9c9ca;
+    --beton-20:#d6d6d7;     /* 20% */
+    --beton-rgb:88,89,91;
+    --bila:#fff;
+    --dub:#8b5a2b;       /* kouřový dub */
+    --dub-2:#a86d34;
+    --dub-light:#c89b6e;
+    --dub-tint:rgba(139,90,43,.16);
+    --line:rgba(255,255,255,.12);
+    --line-2:rgba(255,255,255,.06);
+    --ease:cubic-bezier(.16,.84,.28,1);
+    --ease-out:cubic-bezier(.2,.7,.2,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:#0b0908;
+    background:
+      radial-gradient(900px 600px at 85% 8%, rgba(139,90,43,.12), transparent 60%),
+      radial-gradient(800px 600px at 5% 95%, rgba(139,90,43,.08), transparent 60%),
+      radial-gradient(125% 90% at 50% -10%, #1c1610 0%, #100c09 42%, #070504 100%) no-repeat fixed;
+    color:var(--bila);
+    font-family:'Roboto',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  body.menu-open{overflow:hidden}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+  canvas{display:block}
+  ::selection{background:var(--dub);color:#fff}
+  .display{font-family:'Oswald',sans-serif;text-transform:uppercase;font-weight:700;letter-spacing:-.01em;line-height:.86}
+  .mono{font-family:'Roboto',sans-serif;letter-spacing:.04em}
+  .eyebrow{font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--beton-60)}
+
+  /* ---------- GRAIN + VIGNETTE ---------- */
+  .grain{position:fixed;inset:-50%;z-index:9990;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain 8s steps(6) infinite;}
+  @keyframes grain{0%{transform:translate(0,0)}10%{transform:translate(-4%,-4%)}20%{transform:translate(-8%,2%)}30%{transform:translate(4%,-6%)}40%{transform:translate(-2%,8%)}50%{transform:translate(-6%,4%)}60%{transform:translate(6%,0)}70%{transform:translate(0,6%)}80%{transform:translate(3%,-3%)}90%{transform:translate(-3%,2%)}100%{transform:translate(0,0)}}
+  .vignette{position:fixed;inset:0;z-index:9989;pointer-events:none;background:radial-gradient(130% 100% at 50% 38%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+  /* ---------- CUSTOM CURSOR ---------- */
+  body.cursor-on{cursor:none}
+  body.cursor-on a, body.cursor-on button, body.cursor-on [data-cursor]{cursor:none}
+  #cur-dot,#cur-ring{position:fixed;top:0;left:0;z-index:10000;pointer-events:none;border-radius:50%;mix-blend-mode:difference}
+  #cur-dot{width:7px;height:7px;background:#fff;margin:-3.5px 0 0 -3.5px;transition:opacity .3s}
+  #cur-ring{width:42px;height:42px;border:1px solid rgba(255,255,255,.7);transition:width .35s var(--ease),height .35s var(--ease),background .35s,border-color .35s}
+  body.cur-hover #cur-ring{width:74px;height:74px;background:rgba(255,255,255,.08);border-color:transparent}
+  body.cur-hover #cur-dot{opacity:0}
+  #cur-ring::after{content:attr(data-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#fff;opacity:0;transition:opacity .3s}
+  body.cur-label #cur-ring::after{opacity:1}
+  body.cur-out #cur-dot,body.cur-out #cur-ring{opacity:0}
+  @media (hover:none){#cur-dot,#cur-ring{display:none}}
+
+  /* ---------- SCROLL PROGRESS ---------- */
+  #scroll-prog{position:fixed;top:0;left:0;right:0;height:2px;background:#fff;z-index:60;transform:scaleX(0);transform-origin:left;will-change:transform}
+
+  /* ---------- PRELOADER ---------- */
+  #preloader{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;transition:transform 1s var(--ease),opacity .6s ease;will-change:transform}
+  #preloader.done{transform:translateY(-100%)}
+  .pl-mark{width:120px;height:120px;background:url('assets/logo-white.png') center/contain no-repeat;opacity:.96}
+  .pl-num{font-family:'Oswald',sans-serif;font-weight:300;font-size:72px;letter-spacing:.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .pl-bar{width:min(260px,60vw);height:1px;background:rgba(255,255,255,.16);overflow:hidden}
+  .pl-bar span{display:block;height:100%;background:#fff;transform:scaleX(0);transform-origin:left}
+  .pl-label{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--beton-60)}
+
+  /* ---------- NAV ---------- */
+  .nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:22px 38px;transition:padding .5s var(--ease),background .5s var(--ease),border-color .5s var(--ease);border-bottom:1px solid transparent}
+  .nav.scrolled{padding:14px 38px;background:rgba(0,0,0,.6);backdrop-filter:blur(16px);border-bottom-color:var(--line-2)}
+  .nav-logo{display:flex;align-items:center;gap:18px;font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:.2em;font-size:24px}
+  .nav-logo .mark{width:60px;height:60px;background:url('assets/logo-white.png') center/contain no-repeat;transition:width .4s var(--ease),height .4s var(--ease)}
+  .nav.scrolled .nav-logo{font-size:20px}
+  .nav.scrolled .nav-logo .mark{width:48px;height:48px}
+  .nav-links{display:flex;gap:34px;font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap}
+  .nav-links a{position:relative;padding:6px 0;color:var(--beton-30)}
+  .nav-links a .idx{color:var(--beton);margin-right:7px;font-size:9px;vertical-align:super}
+  .nav-links a::after{content:"";position:absolute;left:0;bottom:0;width:100%;height:1px;background:#fff;transform:scaleX(0);transform-origin:right;transition:transform .4s var(--ease)}
+  .nav-links a:hover,.nav-links a.active{color:#fff}
+  .nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1);transform-origin:left}
+  .burger{display:none;flex-direction:column;gap:6px;background:none;border:0;padding:8px}
+  .burger span{width:26px;height:1.6px;background:#fff;transition:transform .4s var(--ease),opacity .3s}
+  .burger.open span:nth-child(1){transform:translateY(7.6px) rotate(45deg)}
+  .burger.open span:nth-child(2){opacity:0}
+  .burger.open span:nth-child(3){transform:translateY(-7.6px) rotate(-45deg)}
+  @media (max-width:1024px){.nav{padding:16px 20px}.nav.scrolled{padding:12px 20px}.nav-links{display:none}.burger{display:flex}}
+
+  .mobile-menu{position:fixed;inset:0;background:#000;z-index:49;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:90px 24px;transform:translateY(-100%);transition:transform .7s var(--ease);}
+  .mobile-menu.open{transform:none}
+  .mobile-menu a{font-family:'Oswald',sans-serif;font-weight:600;font-size:clamp(40px,11vw,76px);text-transform:uppercase;line-height:1.04;letter-spacing:-.01em;color:#fff;display:flex;align-items:baseline;gap:16px}
+  .mobile-menu a .idx{font-family:'Roboto',sans-serif;font-size:13px;letter-spacing:.1em;color:var(--beton)}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;padding:120px 24px 90px}
+  .hero-bg{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .hero-photo{position:absolute;inset:-3%;background:url('assets/photos/hero-bg.jpg') center/cover no-repeat;opacity:.62;filter:contrast(1.05) saturate(.85);transform:translate(var(--mx,0),var(--my,0));will-change:transform}
+  .hero-photo::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 50% 46%, transparent 0%, rgba(11,9,8,.55) 100%),linear-gradient(to bottom, rgba(11,9,8,.55) 0%, transparent 22%, transparent 70%, rgba(11,9,8,.96) 100%)}
+
+  .hero-top{position:relative;z-index:2;width:100%;max-width:1500px;display:flex;justify-content:space-between;align-items:flex-start;font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--beton-60);margin-bottom:auto;padding-top:20px}
+  .hero-top span{overflow:hidden;display:block}
+  .hero-top .l[data-hero]{opacity:1}
+
+  .hero-mid{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;margin:auto 0}
+  .hero-word{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(74px,19vw,290px);line-height:.8;letter-spacing:-.02em;display:flex;align-items:center;gap:.01em;transform:translate(var(--mx,0),var(--my,0));will-change:transform}
+  .hero-word .ch{display:inline-block;text-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .hero-word .ch.vinyl-o{text-shadow:none}
+  .hero-word .vinyl-o{position:relative;width:.86em;height:.86em;align-self:center;margin:0 -.02em}
+  .hero-word .vinyl-o .disc{position:absolute;inset:0;border-radius:50%;background:#0a0a0a url('assets/vinyl.png') center/110% no-repeat;box-shadow:inset 0 0 0 2px rgba(255,255,255,.85),0 10px 40px rgba(0,0,0,.6);will-change:transform}
+  .hero-word .vinyl-o::after{content:"";position:absolute;left:50%;top:50%;width:8%;height:8%;background:#000;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 3px #fff}
+
+  .hero-sub{position:relative;z-index:2;display:flex;align-items:center;gap:22px;margin-top:42px;flex-wrap:wrap;justify-content:center}
+  .hero-sub .tagline{font-family:'Roboto',sans-serif;font-weight:300;font-size:clamp(15px,1.5vw,19px);color:var(--beton-30);letter-spacing:.01em}
+  .hero-sub .sep{width:38px;height:1px;background:var(--beton)}
+
+  .hero-actions{position:relative;z-index:2;display:flex;gap:36px;margin-top:46px;flex-wrap:wrap;justify-content:center}
+
+  .btn{display:inline-flex;align-items:center;gap:14px;padding:18px 30px;border-radius:999px;font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer;overflow:hidden;position:relative;transition:color .4s var(--ease),border-color .4s var(--ease);isolation:isolate}
+  .btn>*{position:relative;z-index:1}
+  .btn::before{content:"";position:absolute;inset:0;background:#fff;border-radius:999px;transform:translateY(101%);transition:transform .5s var(--ease);z-index:-1}
+  .btn:hover{color:#000;border-color:#fff}
+  .btn:hover::before{transform:translateY(0)}
+  .btn.solid{background:#fff;color:#000;border-color:#fff}
+  .btn.solid::before{background:#000}
+  .btn.solid:hover{color:#fff}
+  .btn .dotpulse{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+  .scroll-cue{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:12px;font-family:'Roboto',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--beton-60)}
+  .scroll-cue .l{position:relative;width:1px;height:46px;background:linear-gradient(to bottom,var(--beton-60),transparent);overflow:hidden}
+  .scroll-cue .l::after{content:"";position:absolute;width:1px;height:46px;background:#fff;animation:cue 2s ease-in-out infinite}
+  @keyframes cue{0%{transform:translateY(-100%)}60%,100%{transform:translateY(100%)}}
+
+  /* ---------- MARQUEE ---------- */
+  .marquee{position:relative;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0;background:#000}
+  .marquee .mq-track{display:flex;align-items:center;gap:46px;white-space:nowrap;width:max-content;will-change:transform}
+  .marquee .item{font-family:'Oswald',sans-serif;font-weight:600;font-size:clamp(34px,5vw,58px);text-transform:uppercase;letter-spacing:.02em;display:inline-flex;align-items:center;gap:46px;color:#fff}
+  .marquee .item.ghost{color:transparent;-webkit-text-stroke:1px var(--beton)}
+  .marquee .star{width:.5em;height:.5em;background:url('assets/vinyl.png') center/contain no-repeat;border-radius:50%;filter:grayscale(1) brightness(2)}
+
+  /* ---------- SECTION SHELL ---------- */
+  .section{position:relative;padding:clamp(90px,13vw,180px) 38px}
+  .wrap{max-width:1420px;margin:0 auto}
+  .shead{display:flex;align-items:flex-end;justify-content:space-between;gap:48px;margin-bottom:clamp(50px,7vw,96px);flex-wrap:wrap}
+  .snum{font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--beton-60);display:flex;align-items:center;gap:12px}
+  .snum::before{content:"";width:36px;height:1px;background:linear-gradient(to right, transparent, var(--dub-2))}
+  .stitle{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(48px,8vw,128px);line-height:.9;letter-spacing:-.015em;margin-top:18px}
+  .skick{max-width:430px;color:var(--beton-30);font-size:16px;line-height:1.65;font-weight:300}
+
+  /* line-mask reveal (JS-tweened) */
+  .line-mask{display:block;overflow:hidden}
+  .line-inner{display:block;transform:translateY(110%)}
+  [data-split]{display:block}
+
+  /* generic reveal (JS-tweened) */
+  .reveal{opacity:0}
+  .reveal.in{opacity:1}
+
+  /* ---------- ÚVOD / STATEMENT ---------- */
+  #uvod{border-top:1px solid var(--line-2)}
+  .statement{font-family:'Oswald',sans-serif;font-weight:500;text-transform:uppercase;font-size:clamp(30px,5.4vw,86px);line-height:1.02;letter-spacing:-.01em;max-width:18ch}
+  .statement em{font-style:normal;color:var(--dub-light)}
+  .uvod-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:64px;align-items:end;margin-top:70px}
+  .uvod-lead{font-size:18px;line-height:1.75;font-weight:300;color:#e7e7e7}
+  .uvod-lead strong{font-weight:500;color:#fff}
+  .links-stack{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .link-row{display:flex;align-items:center;justify-content:space-between;padding:20px 4px;border-bottom:1px solid var(--line);font-family:'Roboto',sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;transition:padding-left .4s var(--ease),color .4s var(--ease)}
+  .link-row:hover{padding-left:16px;color:#fff}
+  .link-row .arr{transition:transform .4s var(--ease)}
+  .link-row:hover .arr{transform:translateX(6px)}
+  @media (max-width:860px){.uvod-grid{grid-template-columns:1fr;gap:44px}}
+
+  /* ---------- O KAPELE ---------- */
+  /* Šedý Beton clip-path z předlohy: diagonální pás s dvěma schodišti.
+     HORNÍ schodiště — odřezává levý horní roh (úhlopříčka 30% × 75%, 10 stupňů 3% × 7.5%).
+     DOLNÍ schodiště — odřezává pravý dolní roh (úhlopříčka 65% × 30%, 10 stupňů 6.5% × 3%).
+     Mezi nimi šedý pás od horního pravého rohu (100%, 0) k dolnímu levému rohu (0, 100%).   */
+  #o-kapele{position:relative;overflow:hidden}
+  #o-kapele::before{
+    content:"";position:absolute;inset:0;z-index:0;
+    background:var(--beton);
+    clip-path:polygon(
+      /* OTOČENO O 180° kolem středu (50%,50%):
+         transparentní bloky teď v PRAVÉM HORNÍM a LEVÉM DOLNÍM rohu,
+         šedá diagonála jde z LEVÉHO HORNÍHO do PRAVÉHO DOLNÍHO rohu. */
+      100% 25%,
+      100% 0%,
+      65% 0%,
+      /* HORNÍ schodiště: krátké-široké, 10 stupňů × (DOWN 3% + LEFT 6.5%), odřezává pravý horní roh */
+      65% 3%,    58.5% 3%,
+      58.5% 6%,  52% 6%,
+      52% 9%,    45.5% 9%,
+      45.5% 12%, 39% 12%,
+      39% 15%,   32.5% 15%,
+      32.5% 18%, 26% 18%,
+      26% 21%,   19.5% 21%,
+      19.5% 24%, 13% 24%,
+      13% 27%,   6.5% 27%,
+      6.5% 30%,  0% 30%,
+      /* Doleva-dolů po levé hraně */
+      0% 100%,
+      70% 100%,
+      /* DOLNÍ schodiště: tall-narrow, 10 stupňů × (UP 7.5% + RIGHT 3%), odřezává levý dolní roh */
+      70% 92.5%, 73% 92.5%,
+      73% 85%,   76% 85%,
+      76% 77.5%, 79% 77.5%,
+      79% 70%,   82% 70%,
+      82% 62.5%, 85% 62.5%,
+      85% 55%,   88% 55%,
+      88% 47.5%, 91% 47.5%,
+      91% 40%,   94% 40%,
+      94% 32.5%, 97% 32.5%,
+      97% 25%
+      /* implicitní close back to (100%, 25%) */
+    );
+  }
+  #o-kapele .wrap{position:relative;z-index:1}
+  #o-kapele .skick{color:#fff}
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-bottom:clamp(60px,8vw,110px)}
+  .about-grid p{font-size:17px;line-height:1.75;font-weight:300;color:#e7e7e7}
+  .about-grid p+p{margin-top:20px}
+  /* O KAPELE — about-facts: bez vlastního pozadí, sedí přímo na šedém schodištěm-panelu sekce */
+  .about-facts{align-self:start;padding:6px 0 8px;color:#fff;position:relative}
+  .fact{display:grid;grid-template-columns:130px 1fr;gap:20px;padding:22px 4px;border-bottom:1px solid rgba(255,255,255,.18)}
+  .about-facts .fact:last-child{border-bottom:0}
+  .fact .k{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--beton-20);padding-top:5px}
+  .fact .v{font-family:'Oswald',sans-serif;font-weight:500;font-size:21px;text-transform:uppercase;letter-spacing:.01em}
+  .fact .v small{display:block;font-family:'Roboto';font-weight:300;font-size:13px;text-transform:none;letter-spacing:0;color:var(--beton-30);margin-top:5px;line-height:1.5}
+  .about-facts .fact .v small{color:rgba(255,255,255,.78)}
+  @media (max-width:860px){.about-grid{grid-template-columns:1fr;gap:40px}}
+
+  .members{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .member{position:relative;overflow:hidden;background:#0b0b0b;border:1px solid var(--line-2);aspect-ratio:3/4}
+  .member image-slot{position:absolute;inset:0;width:100%;height:100%;filter:grayscale(1) contrast(1.05);transition:filter .6s var(--ease),transform .9s var(--ease)}
+  .member:hover image-slot{filter:grayscale(0);transform:scale(1.05)}
+  .member .m-meta{position:absolute;left:0;right:0;bottom:0;padding:18px 16px 20px;background:linear-gradient(to top,rgba(0,0,0,.92) 28%,transparent);z-index:2;pointer-events:none}
+  .member .m-num{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.26em;color:var(--beton-30)}
+  .member .m-name{font-family:'Oswald',sans-serif;font-weight:700;font-size:29px;text-transform:uppercase;line-height:1;margin-top:5px}
+  .member .m-role{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--beton-60);margin-top:7px}
+  .member .m-line{position:absolute;left:0;top:0;width:100%;height:1px;background:#fff;transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease);z-index:3}
+  .member:hover .m-line{transform:scaleX(1)}
+  @media (max-width:1024px){.members{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:620px){.members{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- HUDBA ---------- */
+  /* HUDBA — pouze jemný teplý gradient (žádné schodiště) */
+  #hudba{background:linear-gradient(180deg, rgba(11,9,8,.6) 0%, rgba(var(--beton-rgb),.08) 60%, rgba(11,9,8,.8) 100%)}
+  .tracks{border-top:1px solid var(--line)}
+  .track{display:grid;grid-template-columns:64px 78px 1.1fr 1.4fr auto;align-items:center;gap:28px;padding:30px 6px;border-bottom:1px solid var(--line);position:relative;transition:padding-left .45s var(--ease),background .45s var(--ease)}
+  .track:hover{padding-left:24px;background:var(--dub-tint)}
+  .track .ti{font-family:'Roboto',sans-serif;font-size:12px;color:var(--beton-60)}
+  /* CSS-kreslený vinyl pro ostrost na jakékoli velikosti — žádný PNG, žádné černé pozadí */
+  .track .tdisc{
+    width:74px;height:74px;border-radius:50%;position:relative;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 0 24%, #f0e6d6 24% 30%, transparent 30%),
+      repeating-radial-gradient(circle at 50% 50%, #1c1c1c 0 1.4px, #050505 1.4px 2.8px);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.1), 0 4px 14px rgba(0,0,0,.4);
+  }
+  .track .tdisc::after{content:"";position:absolute;left:50%;top:50%;width:5%;height:5%;border-radius:50%;background:#000;transform:translate(-50%,-50%);box-shadow:0 0 0 1.5px rgba(255,255,255,.25)}
+  .track.playing .tdisc{animation:spin 4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .track .tname{font-family:'Oswald',sans-serif;font-weight:600;font-size:clamp(26px,3.2vw,44px);text-transform:uppercase;line-height:1;letter-spacing:.01em}
+  .track .tname .ydr{display:block;font-family:'Roboto';font-size:11px;font-weight:400;letter-spacing:.18em;color:var(--beton-60);margin-top:8px}
+  .track .wave{width:100%;height:46px}
+  .track .tplay{width:56px;height:56px;border-radius:50%;border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;background:transparent;color:#fff;cursor:pointer;transition:background .35s var(--ease),border-color .35s,transform .35s var(--ease);justify-self:end}
+  .track .tplay svg{width:15px;height:15px}
+  .track:hover .tplay{border-color:#fff}
+  .track.playing .tplay{background:#fff;color:#000;border-color:#fff}
+  .track .tplay .ic-pause{display:none}
+  .track.playing .tplay .ic-play{display:none}
+  .track.playing .tplay .ic-pause{display:block}
+  .track.soon{opacity:.5}
+  @media (max-width:1024px){.track{grid-template-columns:50px 1fr auto;gap:16px}.track .tdisc,.track .wave{display:none}.track .ti{display:none}}
+
+  .platforms{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:64px}
+  .pf{position:relative;overflow:hidden;border:1px solid var(--line);padding:26px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;transition:color .4s var(--ease)}
+  .pf::before{content:"";position:absolute;inset:0;background:#fff;transform:translateY(101%);transition:transform .5s var(--ease)}
+  .pf:hover::before{transform:translateY(0)}
+  .pf>*{position:relative;z-index:1}
+  .pf:hover{color:#000}
+  .pf .pn{font-family:'Oswald',sans-serif;font-weight:600;font-size:19px;text-transform:uppercase;letter-spacing:.03em}
+  .pf .pa{font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+  @media (max-width:900px){.platforms{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- NOVINKY ---------- */
+  .news{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .ncard{display:flex;flex-direction:column;border:1px solid var(--line-2);background:#080808;overflow:hidden;transition:border-color .4s var(--ease),transform .6s var(--ease)}
+  .ncard:hover{border-color:var(--dub-2);transform:translateY(-8px);box-shadow:0 18px 50px rgba(139,90,43,.18)}
+  .ncover{position:relative;aspect-ratio:4/3;overflow:hidden;background:#0d0d0d}
+  .ncover image-slot{position:absolute;inset:0;width:100%;height:100%;filter:grayscale(1);transition:filter .6s var(--ease),transform .9s var(--ease)}
+  .ncard:hover .ncover image-slot{filter:grayscale(0);transform:scale(1.06)}
+  .ncover .tag{position:absolute;left:14px;top:14px;z-index:3;font-family:'Roboto',sans-serif;font-size:9px;letter-spacing:.22em;text-transform:uppercase;background:#000;color:#fff;padding:6px 10px;border:1px solid var(--line)}
+  .nbody{padding:24px 24px 28px;display:flex;flex-direction:column;gap:13px;flex:1}
+  .ndate{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--beton-60)}
+  .ntitle{font-family:'Oswald',sans-serif;font-weight:600;font-size:25px;text-transform:uppercase;line-height:1.04}
+  .nexc{color:var(--beton-30);font-size:14px;line-height:1.65;font-weight:300;flex:1}
+  .nmore{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#fff;display:inline-flex;gap:8px;align-items:center}
+  .nmore .arr{transition:transform .4s var(--ease)}
+  .ncard:hover .nmore .arr{transform:translateX(6px)}
+  @media (max-width:900px){.news{grid-template-columns:1fr}}
+
+  /* ---------- GALERIE ---------- */
+  #galerie{border-top:1px solid var(--line-2)}
+  /* Galerie — pevná výška řádků + grid-row span, aby fotky vyplnily celé buňky bez prázdných mezer */
+  .gal{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:150px;gap:12px}
+  .gcell{position:relative;overflow:hidden;background:#0b0b0b;border:1px solid var(--line-2)}
+  .gcell image-slot{position:absolute;inset:0;width:100%;height:100%;filter:grayscale(1);transition:filter .6s var(--ease),transform 1.1s var(--ease)}
+  .gcell:hover image-slot{filter:grayscale(0);transform:scale(1.05)}
+  .gcell .gtag{position:absolute;left:12px;bottom:11px;z-index:3;font-family:'Roboto',sans-serif;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#fff;pointer-events:none;opacity:.7}
+  /* Každý řádek galerie má stejnou výšku (násobky 150px), takže žádné mezery v řadě */
+  .g1{grid-column:span 7;grid-row:span 3}
+  .g2{grid-column:span 5;grid-row:span 3}
+  .g3{grid-column:span 4;grid-row:span 2}
+  .g4{grid-column:span 4;grid-row:span 2}
+  .g5{grid-column:span 4;grid-row:span 2}
+  .g6{grid-column:span 5;grid-row:span 3}
+  .g7{grid-column:span 7;grid-row:span 3}
+  @media (max-width:760px){
+    .gal{grid-template-columns:repeat(2,1fr);grid-auto-rows:200px}
+    .g1,.g2,.g3,.g4,.g5,.g6,.g7{grid-column:span 1;grid-row:span 1}
+  }
+  .gnote{margin-top:22px;display:flex;align-items:center;gap:16px;font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--beton-60)}
+  .gnote .l{flex:1;height:1px;background:var(--line)}
+
+  /* ---------- MERCH — Beton-plocha s texturou a vyřezaným schodištěm
+     (logomanuál str. 25 + 26: GRAFICKÝ PRVEK 2 přímo clip-pathem,
+      ne samostatným blokem — textura projde celou plochou až ke schodišti) ---------- */
+  #merch{
+    --stair:88px;
+    background:var(--beton);color:#fff;position:relative;overflow:hidden;
+    padding:calc(clamp(90px,13vw,180px) + var(--stair) + 12px) 38px;
+    /* SCHODIŠTĚ: nahoře sestupuje doleva (dub-style), dole zrcadlově doprava */
+    clip-path:polygon(
+      0     calc(var(--stair) * 1.0),
+      20%   calc(var(--stair) * 1.0),
+      20%   calc(var(--stair) * 0.8),
+      40%   calc(var(--stair) * 0.8),
+      40%   calc(var(--stair) * 0.6),
+      60%   calc(var(--stair) * 0.6),
+      60%   calc(var(--stair) * 0.4),
+      80%   calc(var(--stair) * 0.4),
+      80%   calc(var(--stair) * 0.2),
+      100%  calc(var(--stair) * 0.2),
+      100%  calc(100% - var(--stair) * 1.0),
+      80%   calc(100% - var(--stair) * 1.0),
+      80%   calc(100% - var(--stair) * 0.8),
+      60%   calc(100% - var(--stair) * 0.8),
+      60%   calc(100% - var(--stair) * 0.6),
+      40%   calc(100% - var(--stair) * 0.6),
+      40%   calc(100% - var(--stair) * 0.4),
+      20%   calc(100% - var(--stair) * 0.4),
+      20%   calc(100% - var(--stair) * 0.2),
+      0     calc(100% - var(--stair) * 0.2),
+      0     100%
+    );
+  }
+  /* TEXTURA z logomanuálu str. 26 — dvoutónové vertikální obdélníky;
+     je v ::before INSIDE clipované sekce, takže končí přesně na hraně schodiště */
+  #merch::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='110' height='180' viewBox='0 0 110 180'><rect x='0' y='0' width='55' height='90' fill='black' opacity='0.20'/><rect x='55' y='90' width='55' height='90' fill='black' opacity='0.20'/></svg>");
+    background-size:110px 180px;
+    opacity:.55;
+    mix-blend-mode:multiply;
+  }
+  #merch .wrap{position:relative;z-index:1}
+  @media (max-width:760px){
+    #merch{--stair:52px;padding:calc(clamp(80px,16vw,120px) + var(--stair) + 8px) 20px}
+  }
+  #merch .snum{color:rgba(255,255,255,.8)}
+  #merch .snum::before{background:linear-gradient(to right, transparent, #fff)}
+  #merch .stitle{color:#fff}
+  #merch .skick{color:rgba(255,255,255,.9)}
+  .merch-hero{position:relative;border:1px solid var(--line);background:#fafaf6;overflow:hidden;margin-bottom:34px}
+  .merch-hero img{display:block;width:100%;height:auto;mix-blend-mode:multiply;background:#fafaf6}
+  .merch-hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(to top, rgba(0,0,0,.35), transparent);pointer-events:none}
+  .merch-hero .mh-badge{position:absolute;left:22px;top:22px;z-index:2;font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#000;background:var(--dub);padding:7px 12px;border-radius:999px}
+  .merch-hero .mh-title{position:absolute;right:22px;bottom:18px;z-index:2;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(22px,2.6vw,38px);line-height:.92;letter-spacing:-.01em;color:#000;text-align:right}
+  .merch-hero .mh-title small{display:block;font-family:'Roboto';font-weight:400;font-size:11px;letter-spacing:.22em;color:var(--dub);margin-bottom:6px;text-transform:uppercase}
+  .merch-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  .merch-side{display:flex;flex-direction:column;border:1px solid var(--line);padding:28px 28px 30px;background:var(--panel)}
+  .merch-side h3{font-family:'Oswald',sans-serif;font-weight:600;font-size:24px;text-transform:uppercase;letter-spacing:.01em;line-height:1.05;margin-bottom:10px}
+  .merch-side .specs{font-family:'Roboto',sans-serif;font-size:13px;line-height:1.7;color:var(--beton-30);font-weight:300;margin-bottom:22px}
+  .merch-sizes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px}
+  .merch-sizes span{font-family:'Roboto',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--line);padding:8px 12px;transition:background .3s var(--ease),color .3s,border-color .3s}
+  .merch-sizes span:hover{background:var(--dub);color:#000;border-color:var(--dub);cursor:pointer}
+  .merch-pricetag{display:flex;align-items:baseline;gap:14px;margin-top:auto;padding-top:18px;border-top:1px solid var(--line)}
+  .merch-pricetag .pv{font-family:'Oswald',sans-serif;font-weight:700;font-size:42px;letter-spacing:-.01em;color:var(--dub-light)}
+  .merch-pricetag .pl{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--beton-60)}
+  .merch-buy{margin-top:22px}
+  .merch-tracklist{border:1px solid var(--line);padding:28px 28px 30px;background:var(--panel)}
+  .merch-tracklist .tk{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--dub-light);display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .merch-tracklist .tk::after{content:"";flex:1;height:1px;background:linear-gradient(to right, var(--dub-2), transparent)}
+  .merch-tracklist ol{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;counter-reset:tl}
+  .merch-tracklist li{counter-increment:tl;display:grid;grid-template-columns:36px 56px 1fr;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line-2);font-family:'Roboto',sans-serif;font-size:13px}
+  .merch-tracklist li::before{content:counter(tl,decimal-leading-zero);color:var(--beton);font-size:10px;letter-spacing:.18em}
+  .merch-tracklist .d{color:var(--dub-light);font-weight:500;letter-spacing:.04em;font-size:12px}
+  .merch-tracklist .c{font-family:'Oswald',sans-serif;font-weight:500;text-transform:uppercase;font-size:14px;letter-spacing:.02em;color:#fff}
+  @media (max-width:900px){
+    .merch-grid{grid-template-columns:1fr;gap:12px}
+    .merch-tracklist ol{grid-template-columns:1fr}
+  }
+
+  /* ---------- KONTAKT ---------- */
+  #kontakt{position:relative;overflow:hidden;padding-bottom:90px}
+  .kt-watermark{position:absolute;left:50%;bottom:-4vw;transform:translateX(-50%);font-family:'Oswald',sans-serif;font-weight:700;font-size:clamp(120px,30vw,520px);color:var(--beton);opacity:.085;line-height:.7;letter-spacing:-.03em;pointer-events:none;white-space:nowrap}
+  .kt-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.25fr .9fr;gap:72px}
+  .kt-h{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(50px,8vw,128px);line-height:.92;letter-spacing:-.015em}
+  .kt-h em{font-style:normal;color:var(--dub-light)}
+  .kt-lead{margin-top:26px;color:var(--beton-30);font-size:17px;line-height:1.7;font-weight:300;max-width:480px}
+  .kt-socials{display:flex;gap:10px;flex-wrap:wrap;margin-top:38px}
+  .kt-socials a{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:13px 18px;transition:background .35s var(--ease),color .35s var(--ease),border-color .35s}
+  .kt-socials a:hover{background:#fff;color:#000;border-color:#fff}
+  .kt-blocks{display:flex;flex-direction:column;gap:14px;align-self:start}
+  .kb{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:26px;border:1px solid var(--line);transition:border-color .4s var(--ease),background .4s var(--ease)}
+  .kb:hover{border-color:var(--dub-2);background:var(--dub-tint)}
+  .kb .kk{font-family:'Roboto',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--beton-60)}
+  .kb .kv{font-family:'Oswald',sans-serif;font-weight:500;font-size:21px;text-transform:uppercase;margin-top:7px}
+  .kb .ki{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:#fff;flex-shrink:0;transition:background .35s var(--ease),color .35s,border-color .35s,transform .35s var(--ease)}
+  .kb .ki svg{width:18px;height:18px;display:block}
+  .kb:hover .ki{background:#fff;color:#000;border-color:#fff;transform:rotate(-12deg)}
+  @media (max-width:860px){.kt-grid{grid-template-columns:1fr;gap:48px}}
+
+  footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:40px 38px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;font-family:'Roboto',sans-serif;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--beton-30)}
+  footer .fl{display:flex;align-items:center;gap:18px}
+  footer .fl .fm{width:54px;height:54px;background:url('assets/logo-white.png') center/contain no-repeat;opacity:.9}
+  @media (max-width:760px){.section{padding:clamp(80px,16vw,120px) 20px}.nav{padding:16px 20px}footer{padding:28px 20px}}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div id="cur-ring" aria-hidden="true"></div>
+<div id="cur-dot" aria-hidden="true"></div>
+<div id="scroll-prog" aria-hidden="true"></div>
+
+<!-- PRELOADER -->
+<div id="preloader">
+  <div class="pl-mark"></div>
+  <div class="pl-num">000</div>
+  <div class="pl-bar"><span></span></div>
+  <div class="pl-label">Ladíme gramofon…</div>
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a href="#top" class="nav-logo" data-cursor="Nahoru"><span class="mark"></span> STODOLA</a>
+  <div class="nav-links">
+    <a href="#uvod"><span class="idx">01</span>Úvod</a>
+    <a href="#o-kapele"><span class="idx">02</span>O kapele</a>
+    <a href="#hudba"><span class="idx">03</span>Hudba</a>
+    <a href="#novinky"><span class="idx">04</span>Novinky</a>
+    <a href="#galerie"><span class="idx">05</span>Galerie</a>
+    <a href="#merch"><span class="idx">06</span>Merch</a>
+    <a href="#kontakt"><span class="idx">07</span>Kontakt</a>
+  </div>
+  <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#uvod"><span class="idx">01</span>Úvod</a>
+  <a href="#o-kapele"><span class="idx">02</span>O kapele</a>
+  <a href="#hudba"><span class="idx">03</span>Hudba</a>
+  <a href="#novinky"><span class="idx">04</span>Novinky</a>
+  <a href="#galerie"><span class="idx">05</span>Galerie</a>
+  <a href="#merch"><span class="idx">06</span>Merch</a>
+  <a href="#kontakt"><span class="idx">07</span>Kontakt</a>
+</div>
+
+<!-- HERO -->
+<header class="hero" id="top" data-screen-label="Hero">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-photo" data-mouse="10"></div>
+  </div>
+
+  <div class="hero-top">
+    <span class="l" data-hero="200">Pardubice · CZ</span>
+    <span class="l" data-hero="280">Pop-rock / Indie</span>
+    <span class="l" data-hero="360">Est. 2024</span>
+  </div>
+
+  <div class="hero-mid">
+    <h1 class="hero-word" data-mouse="16" aria-label="STODOLA">
+      <span class="ch" data-hero="500">S</span>
+      <span class="ch" data-hero="560">T</span>
+      <span class="ch vinyl-o" data-hero="620"><span class="disc" data-spin="5"></span></span>
+      <span class="ch" data-hero="680">D</span>
+      <span class="ch" data-hero="740">O</span>
+      <span class="ch" data-hero="800">L</span>
+      <span class="ch" data-hero="860">A</span>
+    </h1>
+    <div class="hero-sub" data-hero="1000">
+      <span class="tagline">Tři kytary, jeden groove.</span>
+      <span class="sep"></span>
+      <span class="tagline">Nový Ráno · Hluboká Voda</span>
+    </div>
+    <div class="hero-actions" data-hero="1120">
+      <a class="btn solid" href="#hudba" data-magnetic="0.35" data-cursor="Přehrát"><span class="dotpulse"></span> <span>Poslechnout hudbu</span></a>
+      <a class="btn" href="#o-kapele" data-magnetic="0.35"><span>O kapele →</span></a>
+    </div>
+  </div>
+
+  <div class="scroll-cue"><span>Scroll</span><span class="l"></span></div>
+</header>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="mq-track" data-marquee="1" data-speed="0.8">
+    <span class="item">Nový Ráno <span class="star"></span> Hluboká Voda <span class="star"></span> <span class="ghost">Pop-rock</span> <span class="star"></span> Pardubice <span class="star"></span> Tři kytary jeden groove <span class="star"></span></span>
+    <span class="item">Nový Ráno <span class="star"></span> Hluboká Voda <span class="star"></span> <span class="ghost">Pop-rock</span> <span class="star"></span> Pardubice <span class="star"></span> Tři kytary jeden groove <span class="star"></span></span>
+  </div>
+</div>
+
+
+<!-- ÚVOD -->
+<section class="section" id="uvod" data-screen-label="Úvod">
+  <div class="wrap">
+    <div class="shead">
+      <div>
+        <div class="snum reveal">01 — Úvod</div>
+      </div>
+    </div>
+    <div class="statement" data-split>Spojujeme energii<br/>kytarového pop-rocku<br/>s atmosférou <em>moderního indie.</em></div>
+
+    <div class="uvod-grid">
+      <p class="uvod-lead reveal">STODOLA je <strong>česká pětičlenná kapela z Pardubic</strong>. Naše tvorba stojí na silných melodiích, výrazných refrénech a živém kapelovém zvuku, který drží propojení třech kytar a vypravěčského zpěvu. Písně zachycují momenty každodenního života — od naděje a nových začátků až po introspektivní témata.</p>
+      <div class="links-stack reveal" data-reveal="100">
+        <a class="link-row" href="#" data-cursor="Otevřít"><span>Spotify</span><span class="arr">↗</span></a>
+        <a class="link-row" href="#" data-cursor="Otevřít"><span>Instagram</span><span class="arr">↗</span></a>
+        <a class="link-row" href="#" data-cursor="Otevřít"><span>YouTube</span><span class="arr">↗</span></a>
+        <a class="link-row" href="#" data-cursor="Otevřít"><span>Facebook</span><span class="arr">↗</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- O KAPELE -->
+<section class="section" id="o-kapele" data-screen-label="O kapele">
+  <div class="wrap">
+    <div class="shead">
+      <div>
+        <div class="snum reveal">02 — O kapele</div>
+        <h2 class="stitle" data-split>Pětka<br/>v plné palbě</h2>
+      </div>
+      <p class="skick reveal" data-reveal="120">Navazujeme na tradici domácího pop-rocku, ale držíme se moderního zvuku blízkého současné indie scéně — s vlastním, autentickým výrazem.</p>
+    </div>
+
+    <div class="about-grid">
+      <div class="reveal">
+        <p>Začínali jsme jako parta muzikantů, které spojila chuť hrát naživo a psát vlastní věci v češtině. Postupně z toho vznikl zvuk, který stojí na třech kytarách, pevné rytmice a melodii, co se drží.</p>
+        <p>První dva singly — <strong>Nový Ráno</strong> a <strong>Hluboká Voda</strong> — ukazují obě strany kapely: energii i citlivost, refrén i prostor.</p>
+      </div>
+      <div class="about-facts reveal" data-reveal="120">
+        <div class="fact"><div class="k">Původ</div><div class="v">Pardubice<small>Česká republika</small></div></div>
+        <div class="fact"><div class="k">Žánr</div><div class="v">Pop-rock · Indie<small>Tři kytary, vypravěčský zpěv</small></div></div>
+        <div class="fact"><div class="k">Sestava</div><div class="v">5 členů<small>Zpěv · 2× sólová kytara · basa · bicí</small></div></div>
+      </div>
+    </div>
+
+    <div class="members">
+      <article class="member reveal"><div class="m-line"></div><image-slot id="member-1" src="assets/photos/member-1.webp" shape="rect" placeholder="Foto · Martin"></image-slot><div class="m-meta"><div class="m-num">01</div><div class="m-name">Martin</div><div class="m-role">Zpěv · kytara</div></div></article>
+      <article class="member reveal" data-reveal="80"><div class="m-line"></div><image-slot id="member-2" src="assets/photos/member-2.webp" shape="rect" placeholder="Foto · Richard"></image-slot><div class="m-meta"><div class="m-num">02</div><div class="m-name">Richard</div><div class="m-role">Sólová kytara</div></div></article>
+      <article class="member reveal" data-reveal="160"><div class="m-line"></div><image-slot id="member-3" src="assets/photos/member-3.webp" shape="rect" placeholder="Foto · Lukáš"></image-slot><div class="m-meta"><div class="m-num">03</div><div class="m-name">Lukáš</div><div class="m-role">Sólová kytara</div></div></article>
+      <article class="member reveal" data-reveal="240"><div class="m-line"></div><image-slot id="member-4" src="assets/photos/member-4.webp" shape="rect" placeholder="Foto · Honza"></image-slot><div class="m-meta"><div class="m-num">04</div><div class="m-name">Honza</div><div class="m-role">Baskytara</div></div></article>
+      <article class="member reveal" data-reveal="320"><div class="m-line"></div><image-slot id="member-5" src="assets/photos/member-5.webp" shape="rect" placeholder="Foto · David"></image-slot><div class="m-meta"><div class="m-num">05</div><div class="m-name">David</div><div class="m-role">Bicí</div></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- HUDBA -->
+<section class="section" id="hudba" data-screen-label="Hudba">
+  <div class="wrap">
+    <div class="shead">
+      <div>
+        <div class="snum reveal">03 — Hudba</div>
+        <h2 class="stitle" data-split>Singly &amp;<br/>nahrávky</h2>
+      </div>
+      <p class="skick reveal" data-reveal="120">Klikni na přehrání a sleduj, jak deska naskočí. Skladby brzy doplníme o reálné odkazy na streamovací platformy.</p>
+    </div>
+
+    <div class="tracks">
+      <div class="track reveal" data-cursor="">
+        <span class="ti">01</span>
+        <span class="tdisc"></span>
+        <div class="tname">Nový Ráno<span class="ydr">Singl · 2025</span></div>
+        <canvas class="wave"></canvas>
+        <button class="tplay" aria-label="Přehrát / pauza">
+          <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+      </div>
+      <div class="track reveal" data-reveal="80">
+        <span class="ti">02</span>
+        <span class="tdisc"></span>
+        <div class="tname">Hluboká Voda<span class="ydr">Singl · 2025</span></div>
+        <canvas class="wave"></canvas>
+        <button class="tplay" aria-label="Přehrát / pauza">
+          <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+      </div>
+      <div class="track soon reveal" data-reveal="160">
+        <span class="ti">03</span>
+        <span class="tdisc" style="filter:grayscale(1)"></span>
+        <div class="tname">Připravujeme…<span class="ydr">Ve studiu</span></div>
+        <canvas class="wave"></canvas>
+        <button class="tplay" aria-label="Brzy" disabled>
+          <svg class="ic-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="platforms">
+      <a class="pf reveal" href="#" data-cursor="Otevřít"><span class="pn">Spotify</span><span class="pa">↗</span></a>
+      <a class="pf reveal" data-reveal="60" href="#" data-cursor="Otevřít"><span class="pn">Apple Music</span><span class="pa">↗</span></a>
+      <a class="pf reveal" data-reveal="120" href="#" data-cursor="Otevřít"><span class="pn">YouTube</span><span class="pa">↗</span></a>
+      <a class="pf reveal" data-reveal="180" href="#" data-cursor="Otevřít"><span class="pn">SoundCloud</span><span class="pa">↗</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- NOVINKY -->
+<section class="section" id="novinky" data-screen-label="Novinky">
+  <div class="wrap">
+    <div class="shead">
+      <div>
+        <div class="snum reveal">04 — Novinky</div>
+        <h2 class="stitle" data-split>Co se děje</h2>
+      </div>
+      <p class="skick reveal" data-reveal="120">Vydání, koncerty, studio. Tato sekce je připravená na pravidelné updaty — text i obrázek lze kdykoliv vyměnit.</p>
+    </div>
+
+    <div class="news">
+      <article class="ncard reveal">
+        <div class="ncover"><span class="tag">Singl</span><image-slot id="news-1" src="assets/photos/news-1.webp" shape="rect" placeholder="Artwork / foto"></image-slot></div>
+        <div class="nbody"><div class="ndate">Brzy · 2025</div><h3 class="ntitle">Vychází singl „Hluboká Voda"</h3><p class="nexc">Druhá vydaná skladba ukazuje introspektivní stranu kapely. K poslechu na všech platformách.</p><a class="nmore" href="#" data-cursor="Číst">Číst víc <span class="arr">→</span></a></div>
+      </article>
+      <article class="ncard reveal" data-reveal="90">
+        <div class="ncover"><span class="tag">Studio</span><image-slot id="news-2" src="assets/photos/news-2.webp" shape="rect" placeholder="Artwork / foto"></image-slot></div>
+        <div class="nbody"><div class="ndate">Připravujeme</div><h3 class="ntitle">Pracujeme na nových skladbách</h3><p class="nexc">Ve studiu pilujeme další materiál — energii, melodie a aranže. První ukázky brzy na sítích.</p><a class="nmore" href="#" data-cursor="Číst">Číst víc <span class="arr">→</span></a></div>
+      </article>
+      <article class="ncard reveal" data-reveal="180">
+        <div class="ncover"><span class="tag">Live</span><image-slot id="news-3" src="assets/photos/news-3.webp" shape="rect" placeholder="Artwork / foto"></image-slot></div>
+        <div class="nbody"><div class="ndate">Kalendář akcí</div><h3 class="ntitle">Plánujeme koncerty</h3><p class="nexc">Brzy chystáme první živá vystoupení. Sledujte nás na Instagramu, ať vám nic neuteče.</p><a class="nmore" href="#" data-cursor="Číst">Číst víc <span class="arr">→</span></a></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- GALERIE -->
+<section class="section" id="galerie" data-screen-label="Galerie">
+  <div class="wrap">
+    <div class="shead">
+      <div>
+        <div class="snum reveal">05 — Galerie</div>
+        <h2 class="stitle" data-split>Foto &amp;<br/>backstage</h2>
+      </div>
+      <p class="skick reveal" data-reveal="120">Přetáhni sem fotky z koncertů, ze zkušebny a ze studia — uloží se a zůstanou. Černobílé, naživo barevné.</p>
+    </div>
+
+    <div class="gal">
+      <div class="gcell g1 reveal" data-parallax="0.06"><image-slot id="gal-1" src="assets/photos/gal-1.webp" shape="rect" placeholder="Live"></image-slot><span class="gtag">01 · Live</span></div>
+      <div class="gcell g2 reveal" data-reveal="80" data-parallax="0.12"><image-slot id="gal-2" src="assets/photos/gal-2.webp" shape="rect" placeholder="Portrét"></image-slot><span class="gtag">02 · Portrét</span></div>
+      <div class="gcell g3 reveal" data-parallax="0.1"><image-slot id="gal-3" src="assets/photos/gal-3.webp" shape="rect" placeholder="Detail"></image-slot><span class="gtag">03 · Detail</span></div>
+      <div class="gcell g4 reveal" data-reveal="80" data-parallax="0.05"><image-slot id="gal-4" src="assets/photos/gal-4.webp" shape="rect" placeholder="Backstage"></image-slot><span class="gtag">04 · Backstage</span></div>
+      <div class="gcell g5 reveal" data-reveal="160" data-parallax="0.14"><image-slot id="gal-5" src="assets/photos/gal-5.webp" shape="rect" placeholder="Studio"></image-slot><span class="gtag">05 · Studio</span></div>
+      <div class="gcell g6 reveal" data-parallax="0.08"><image-slot id="gal-6" src="assets/photos/gal-6.webp" shape="rect" placeholder="Kytary"></image-slot><span class="gtag">06 · Kytary</span></div>
+      <div class="gcell g7 reveal" data-reveal="80" data-parallax="0.05"><image-slot id="gal-7" src="assets/photos/gal-7.webp" shape="rect" placeholder="Live wide"></image-slot><span class="gtag">07 · Live</span></div>
+    </div>
+    <div class="gnote"><span>Placeholdery — přetáhni sem finální fotky</span><span class="l"></span><span>07 polí</span></div>
+  </div>
+</section>
+
+<!-- MERCH (schodiště je teď clip-path přímo na sekci — viz CSS #merch) -->
+<section class="section" id="merch" data-screen-label="Merch">
+  <div class="wrap">
+    <div class="shead">
+      <div>
+        <div class="snum reveal">06 — Merch</div>
+        <h2 class="stitle" data-split>Nahlas<br/>&amp; Zblízka</h2>
+      </div>
+      <p class="skick reveal" data-reveal="120">Limitované tour-tričko 2026. Černá bavlna, logo na hrudi, na zádech celý plán dat. Z manuálu Stodola.</p>
+    </div>
+
+    <div class="merch-hero reveal">
+      <span class="mh-badge">Tour 2026</span>
+      <div class="mh-title"><small>Limitované · 1. série</small>Nahlas<br/>a Zblízka</div>
+      <img src="assets/photos/merch-tshirts.jpg" alt="STODOLA Tour Tee 2026 — přední, vzorová a zadní strana" />
+    </div>
+
+    <div class="merch-grid">
+      <div class="merch-side reveal" data-reveal="80">
+        <h3>STODOLA Tour Tee 2026</h3>
+        <p class="specs">100% organická bavlna · 180 g/m² · regular fit. Tisk na hrudi (logo) a na zádech (textura + tracklist). Vyrobeno v ČR.</p>
+        <div class="merch-sizes">
+          <span>S</span><span>M</span><span>L</span><span>XL</span><span>XXL</span>
+        </div>
+        <a class="btn solid merch-buy" href="#" data-cursor="Objednat"><span class="dotpulse"></span> <span>Objednat</span></a>
+        <div class="merch-pricetag">
+          <span class="pv">650 Kč</span>
+          <span class="pl">vč. DPH · doprava ČR/SK</span>
+        </div>
+      </div>
+
+      <div class="merch-tracklist reveal" data-reveal="160">
+        <div class="tk">Tracklist tour 2026</div>
+        <ol>
+          <li><span class="d">18.4.</span><span class="c">Pardubice</span></li>
+          <li><span class="d">25.4.</span><span class="c">Chrudim</span></li>
+          <li><span class="d">26.4.</span><span class="c">Police n.M.</span></li>
+          <li><span class="d">02.5.</span><span class="c">Náchod</span></li>
+          <li><span class="d">03.5.</span><span class="c">Hradec Králové</span></li>
+          <li><span class="d">09.5.</span><span class="c">Brno</span></li>
+          <li><span class="d">23.5.</span><span class="c">Praha</span></li>
+          <li><span class="d">30.5.</span><span class="c">Žďár n.S.</span></li>
+          <li><span class="d">06.6.</span><span class="c">Třebíč</span></li>
+          <li><span class="d">13.6.</span><span class="c">Plzeň</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KONTAKT -->
+<section class="section" id="kontakt" data-screen-label="Kontakt">
+  <div class="kt-watermark" aria-hidden="true">STODOLA</div>
+  <div class="wrap">
+    <div class="kt-grid">
+      <div>
+        <div class="snum reveal">07 — Kontakt</div>
+        <h2 class="kt-h reveal" data-reveal="60" style="margin-top:16px"><em>Booking,</em><br/>spolupráce,<br/>info.</h2>
+        <p class="kt-lead reveal" data-reveal="120">Zajímá vás koncert, spolupráce nebo se chcete jen ozvat? Napište — odpovídáme rychle.</p>
+        <div class="kt-socials reveal" data-reveal="180">
+          <a href="#" data-cursor="↗">Instagram</a>
+          <a href="#" data-cursor="↗">Facebook</a>
+          <a href="#" data-cursor="↗">YouTube</a>
+          <a href="#" data-cursor="↗">Spotify</a>
+        </div>
+      </div>
+      <div class="kt-blocks">
+        <a class="kb reveal" href="mailto:info@stodolaband.cz" data-cursor="Napsat">
+          <div><div class="kk">E-mail</div><div class="kv">info@stodolaband.cz</div></div>
+          <span class="ki" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5l9 6.5 9-6.5"/><rect x="3" y="5" width="18" height="14" rx="1.5"/></svg></span>
+        </a>
+        <a class="kb reveal" data-reveal="80" href="mailto:booking@stodolaband.cz" data-cursor="Napsat">
+          <div><div class="kk">Booking</div><div class="kv">booking@stodolaband.cz</div></div>
+          <span class="ki" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+        </a>
+        <div class="kb reveal" data-reveal="160">
+          <div><div class="kk">Sídlo</div><div class="kv">Pardubice, CZ</div></div>
+          <span class="ki" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-7.5-7-12a7 7 0 1114 0c0 4.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.4" fill="currentColor"/></svg></span>
+        </div>
+        <a class="kb reveal" data-reveal="240" href="http://stodolaband.cz/" data-cursor="Otevřít">
+          <div><div class="kk">Web</div><div class="kv">stodolaband.cz</div></div>
+          <span class="ki" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fl"><span class="fm"></span> © 2025 STODOLA</div>
+  <div>Pop-rock · Pardubice</div>
+  <div>stodolaband.cz</div>
+</footer>
+
+<script src="image-slot.js"></script>
+<script src="stodola.js"></script>
+</body>
+</html>
