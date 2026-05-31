@@ -332,7 +332,7 @@ textarea.input {
 }
 .select__value:after {
   content: "";
-  background: url(img/arrow.svg) center/contain no-repeat;
+  background: url(img/arrow-2.svg) center/contain no-repeat;
   align-self: stretch;
   flex: 0 0 20px;
   height: 1.25rem;
