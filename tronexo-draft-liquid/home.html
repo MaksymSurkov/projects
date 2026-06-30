@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="format-detection" content="telephone=no">
+	<title>TRONEXO — Be the Trader. Be the ONE.</title>
+	<meta name="description" content="A transparent prop trading ecosystem built on clear rules and measurable performance. Trade simulated capital — keep up to 80% of the rewards.">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap&_v=20260630165510" rel="stylesheet">
+
+	<link rel="stylesheet" href="css/style.min.css?_v=20260630165510">
+	<link rel="shortcut icon" href="favicon.ico">
+</head>
+
+<body>
+	<div class="wrapper">
+		<!-- ===================== Boot loader ===================== -->
+		<div class="boot" id="boot">
+			<img class="boot__logo" src="img/Logo-White.svg" alt="TRONEXO">
+			<div class="boot__bar">
+				<div class="boot__bar-fill" id="boot-bar"></div>
+			</div>
+			<div class="boot__pct" id="boot-pct">0%</div>
+		</div>
+
+		<!-- ===================== Animated background ===================== -->
+		<canvas class="bg-canvas" id="glx"></canvas>
+		<div class="bg-grid" aria-hidden="true"></div>
+
+		<!-- ===================== Scroll progress ===================== -->
+		<div class="scroll-progress" id="progress"></div>
+
+		<!-- ===================== Navigation ===================== -->
+		<nav class="nav" id="nav">
+			<div class="nav__container">
+				<a class="nav__brand" href="#top"><img src="img/Logo-White.svg" alt="TRONEXO"></a>
+				<div class="menu" id="nav-menu">
+					<button type="button" class="menu__icon icon-menu"><span></span></button>
+					<nav class="menu__body">
+						<ul class="menu__list">
+							<li class="menu__item">
+								<a href="#top" class="menu__link menu__link--chevron">
+									<svg class="nav__chevron" width="10" height="7" viewBox="0 0 10 7" fill="none">
+										<path d="M1 1.5 5 5.5 9 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>Tronexo
+								</a>
+							</li>
+							<li class="menu__item">
+								<a href="#funding" class="menu__link menu__link--chevron">
+									<svg class="nav__chevron" width="10" height="7" viewBox="0 0 10 7" fill="none">
+										<path d="M1 1.5 5 5.5 9 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>Trading
+								</a>
+							</li>
+							<li class="menu__item">
+								<a href="#support" class="menu__link menu__link--chevron">
+									<svg class="nav__chevron" width="10" height="7" viewBox="0 0 10 7" fill="none">
+										<path d="M1 1.5 5 5.5 9 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>Support &amp; Info
+								</a>
+							</li>
+							<li class="menu__item"><a href="#community" class="menu__link">Affiliate Program</a></li>
+							<li class="menu__item"><a href="#start" class="menu__link">Pre-register</a></li>
+						</ul>
+						<span class="nav__badge">Trader Zone is Coming Soon</span>
+					</nav>
+				</div>
+			</div>
+		</nav>
+
+		<main class="page">
+			<div class="page__scrim" aria-hidden="true"></div>
+			<!-- ===================== Hero ===================== -->
+			<header class="hero" id="top" data-screen-label="Hero" data-watch data-watch-threshold="0.85">
+				<div class="hero__container">
+					<div class="hero__body">
+						<div class="hero__eyebrow js-fade" data-delay="150">
+							<img class="hero__eyebrow-logo" src="img/Logo-White.svg" alt="TRONEXO">
+							<span>Prop Trading Ecosystem</span>
+						</div>
+						<h1 class="hero__title">
+							<span class="hero__line"><span class="js-rise" data-delay="150">You bring</span><span class="js-rise" data-delay="280">the skills.</span></span>
+							<span class="hero__line"><span class="js-rise hero__title--dim" data-delay="420">We bring <span class="u-gradient">the opportunity.</span></span></span>
+						</h1>
+						<p class="hero__lead js-fade" data-delay="650">A transparent prop trading platform built on clear rules and measurable performance. Trade simulated capital — keep up to <strong>80%</strong> of the rewards.</p>
+						<div class="hero__actions js-fade" data-delay="800">
+							<a class="btn btn--primary btn--lg" href="#start">Pre-register now <span class="btn__arrow">→</span></a>
+							<div class="hero__stats">
+								<span class="hero__stat-num">$1M</span><span class="hero__stat-label">capital</span>
+								<span class="hero__divider"></span>
+								<span class="hero__stat-num">80%</span><span class="hero__stat-label">rewards</span>
+								<span class="hero__divider"></span>
+								<span class="hero__stat-num">3</span><span class="hero__stat-label">funding models</span>
+							</div>
+						</div>
+						<div class="hero__badges js-fade" data-delay="900">
+							<span class="hero__badges-label">Coming soon</span>
+							<div class="hero__bages-links">
+								<a class="hero__badge" href="#"><img src="img/badge-appstore.svg" alt="Download on the App Store"></a>
+								<a class="hero__badge" href="#"><img src="img/badge-googleplay.svg" alt="Get it on Google Play"></a>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="hero__footer">
+					<span class="hero__scroll">Scroll to enter <span>↓</span></span>
+				</div>
+			</header>
+
+			<!-- ===================== Statement ===================== -->
+			<section class="statement" data-screen-label="Statement">
+				<div class="statement__sticky" data-fade-when-climbed>
+					<div class="statement__container">
+						<div class="statement__kicker kicker" data-reveal>The Ecosystem</div>
+						<h2 class="statement__title title" data-reveal>Conquer the market with the <span class="u-gradient">Tronexo prop trading ecosystem</span></h2>
+						<p class="statement__lead lead" data-reveal>The future of prop trading has arrived. Join a transparent platform built on clear rules and measurable performance — simulated trading through three distinct funding models, 80% performance rewards, and the opportunity to manage up to $1M in virtual capital.</p>
+						<div class="statement__stats" data-reveal>
+							<div class="stat">
+								<div class="stat__num"><span data-count="1" data-prefix="$" data-suffix="M" data-dur="1600">$1M</span></div>
+								<div class="stat__label">Simulated capital</div>
+							</div>
+							<div class="stat">
+								<div class="stat__num"><span data-count="80" data-suffix="%" data-dur="1500">80%</span></div>
+								<div class="stat__label">Performance rewards</div>
+							</div>
+							<div class="stat">
+								<div class="stat__num"><span data-count="3" data-dur="1200">3</span></div>
+								<div class="stat__label">Funding models</div>
+							</div>
+							<div class="stat">
+								<div class="stat__num"><span class="stat__infinity">∞</span></div>
+								<div class="stat__label">No time limit</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Highlights (pinned) ===================== -->
+			<section class="highlights" id="highlights" data-hl-pin data-screen-label="Highlights">
+				<div class="highlights__stage" data-hl-stage>
+					<div class="highlights__bg" data-hl-bg>
+						<img src="img/highlights.webp" alt="Tronexo trader">
+						<div class="highlights__bg-scrim" aria-hidden="true"></div>
+					</div>
+					<div class="highlights__container">
+						<div class="highlights__aside">
+							<div class="highlights__kicker kicker">Key Highlights</div>
+							<h2 class="highlights__title title">Built to <span class="u-gradient">give you the edge</span></h2>
+							<div class="highlights__nav">
+								<button class="highlights__nav-item is-active" data-hl-nav="0"><span class="highlights__nav-index">01</span><span class="highlights__nav-label">Capital Power</span></button>
+								<button class="highlights__nav-item" data-hl-nav="1"><span class="highlights__nav-index">02</span><span class="highlights__nav-label">3 Models</span></button>
+								<button class="highlights__nav-item" data-hl-nav="2"><span class="highlights__nav-index">03</span><span class="highlights__nav-label">No Time Limit</span></button>
+								<button class="highlights__nav-item" data-hl-nav="3"><span class="highlights__nav-index">04</span><span class="highlights__nav-label">80% Profit</span></button>
+								<button class="highlights__nav-item" data-hl-nav="4"><span class="highlights__nav-index">05</span><span class="highlights__nav-label">3 Platforms</span></button>
+								<button class="highlights__nav-item" data-hl-nav="5"><span class="highlights__nav-index">06</span><span class="highlights__nav-label">Earn Rewards</span></button>
+								<button class="highlights__nav-item" data-hl-nav="6"><span class="highlights__nav-index">07</span><span class="highlights__nav-label">Affiliate</span></button>
+								<button class="highlights__nav-item" data-hl-nav="7"><span class="highlights__nav-index">08</span><span class="highlights__nav-label">Human Support</span></button>
+							</div>
+						</div>
+						<div class="highlights__panels">
+							<article class="highlights__panel is-active" data-hl-panel="0">
+								<span class="highlights__panel-ghost">01</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure">$1M</div>
+								<h3 class="highlights__panel-name">Capital Power</h3>
+								<p class="highlights__panel-text">Get access to a $1M simulated account.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="1">
+								<span class="highlights__panel-ghost">02</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure">3</div>
+								<h3 class="highlights__panel-name">3 Models</h3>
+								<p class="highlights__panel-text">Choose from three funding models.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="2">
+								<span class="highlights__panel-ghost">03</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure">∞</div>
+								<h3 class="highlights__panel-name">No Time Limit</h3>
+								<p class="highlights__panel-text">Unlimited trading period to succeed.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="3">
+								<span class="highlights__panel-ghost">04</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure">80%</div>
+								<h3 class="highlights__panel-name">80% Profit</h3>
+								<p class="highlights__panel-text">Keep up to 80% of your simulated profits.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="4">
+								<span class="highlights__panel-ghost">05</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure">3</div>
+								<h3 class="highlights__panel-name">3 Platforms</h3>
+								<p class="highlights__panel-text">Trade on the world's leading platforms.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="5">
+								<span class="highlights__panel-ghost">06</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure highlights__panel-figure--word">FAST</div>
+								<h3 class="highlights__panel-name">Earn Rewards</h3>
+								<p class="highlights__panel-text">Fast and secure rewards.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="6">
+								<span class="highlights__panel-ghost">07</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure highlights__panel-figure--word">KEY</div>
+								<h3 class="highlights__panel-name">Affiliate</h3>
+								<p class="highlights__panel-text">Become our key partner.</p>
+							</article>
+							<article class="highlights__panel" data-hl-panel="7">
+								<span class="highlights__panel-ghost">08</span>
+								<span class="highlights__panel-rule"></span>
+								<div class="highlights__panel-figure highlights__panel-figure--word">24/7</div>
+								<h3 class="highlights__panel-name">Human Support</h3>
+								<p class="highlights__panel-text">24/7 multilingual support.</p>
+							</article>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Funding models ===================== -->
+			<section class="funding" id="funding" data-screen-label="Funding Models">
+				<div class="funding__container">
+					<div class="funding__head" data-reveal>
+						<div class="funding__kicker kicker">Funding Models</div>
+						<h2 class="title"><span class="u-gradient">Choose the simulated funding model</span> that fits your strategy</h2>
+						<p class="funding__lead lead"><span>Choose from three simulated funding models tailored to your trading style, ranging from instant virtual funding to one-phase and two-phase evaluations. Prepare to trade with significant virtual capital in our simulated environment powered by real market data. Gain instant access or pass the evaluation with no time limits to unlock your <strong>TRONEXO</strong> Account.</p>
+					</div>
+
+					<div class="funding__config" id="tx-funding" data-reveal>
+						<div class="funding__tiles">
+							<button class="funding__tile funding__tile--fastlane is-active" data-tile="fastlane" type="button">
+								<span class="funding__tile-img" aria-hidden="true"></span>
+								<span class="funding__tile-scrim" aria-hidden="true"></span>
+								<span class="funding__tile-label" data-tilelabel>Fastlane</span>
+							</button>
+							<button class="funding__tile funding__tile--checkpoint" data-tile="checkpoint" type="button">
+								<span class="funding__tile-img" aria-hidden="true"></span>
+								<span class="funding__tile-scrim" aria-hidden="true"></span>
+								<span class="funding__tile-label" data-tilelabel>Checkpoint</span>
+							</button>
+							<button class="funding__tile funding__tile--verified" data-tile="verified" type="button">
+								<span class="funding__tile-img" aria-hidden="true"></span>
+								<span class="funding__tile-scrim" aria-hidden="true"></span>
+								<span class="funding__tile-label" data-tilelabel>Verified</span>
+							</button>
+						</div>
+						<div class="funding__panel" data-panel></div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Supported platforms ===================== -->
+			<section class="platforms" id="platforms" data-screen-label="Supported Platforms">
+				<div class="platforms__container" data-reveal>
+					<div class="platforms__intro">
+						<div class="platforms__kicker kicker">Supported Platforms</div>
+						<h2 class="platforms__title title">Trade on the world's <span class="u-gradient">leading platforms</span></h2>
+						<p class="platforms__lead lead">Access deep liquidity and real market data through the industry's most trusted trading platforms — desktop, web and mobile, all fully supported across every funding model.</p>
+					</div>
+					<div class="platforms__grid">
+						<div class="platform-card">
+							<img class="platform-card__logo" src="img/ctrader.webp" alt="cTrader">
+							<div class="platform-card__meta">Desktop · Web · Mobile</div>
+						</div>
+						<div class="platform-card">
+							<img class="platform-card__logo" src="img/dxtrade.svg" alt="DXtrade">
+							<div class="platform-card__meta">Desktop · Web · Mobile</div>
+						</div>
+						<div class="platform-card platform-card--soon">
+							<img class="platform-card__logo" src="img/metatrader5.webp" alt="MetaTrader 5">
+							<span class="platform-card__badge">Coming soon</span>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Performance (pinned) ===================== -->
+			<section class="performance" id="performance" data-pin-wrap data-screen-label="Performance">
+				<div class="performance__sticky">
+					<div class="performance__container">
+						<div class="performance__copy">
+							<div class="performance__kicker kicker">Performance</div>
+							<h2 class="performance__title title"><span class="u-gradient">Results</span><br>you can measure.</h2>
+							<p class="performance__lead lead">Clear rules. Realized balance. No hidden mechanics. Qualify for payouts based on measurable results — and keep up to 80% of your simulated profits.</p>
+							<div class="performance__metrics">
+								<div class="metric">
+									<div class="metric__num metric__num--green"><span data-equity-prog="80" data-suffix="%">0%</span></div>
+									<div class="metric__label">Max profit split</div>
+								</div>
+								<div class="metric">
+									<div class="metric__num"><span data-equity-prog="1" data-dec="1" data-prefix="$" data-suffix="M">$0.0M</span></div>
+									<div class="metric__label">Simulated capital</div>
+								</div>
+							</div>
+						</div>
+						<div class="performance__chart">
+							<div class="performance__chart-head">
+								<span>Your journey · illustrative</span>
+								<span class="performance__chart-tag">▲ progress</span>
+							</div>
+							<svg class="performance__svg" viewBox="0 0 640 360" preserveAspectRatio="none">
+								<line x1="0" y1="90" x2="640" y2="90"></line>
+								<line x1="0" y1="180" x2="640" y2="180"></line>
+								<line x1="0" y1="270" x2="640" y2="270"></line>
+								<path class="performance__path" data-equity-path d="M0,330 L58,312 L116,322 L174,286 L232,300 L290,250 L348,266 L406,205 L464,222 L522,150 L580,168 L640,72" fill="none"></path>
+								<circle class="performance__dot" data-equity-dot cx="0" cy="330" r="5.5"></circle>
+							</svg>
+							<div class="performance__axis"><span>Day 0</span><span>Evaluation</span><span>Funded</span><span>Payout</span></div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Ecosystem ===================== -->
+			<section class="ecosystem" id="ecosystem" data-screen-label="Ecosystem">
+				<div class="ecosystem__container">
+					<div class="ecosystem__kicker kicker" data-reveal>Compete & Learn</div>
+					<h2 class="ecosystem__title title" data-reveal>Go beyond the ordinary <span class="u-gradient">with the Tronexo ecosystem</span></h2>
+					<p class="ecosystem__lead lead" data-reveal>Join our ecosystem and transform your potential into performance. Prepare for the World Trading Championship, where top performers compete for exclusive rankings and premium rewards. Or, learn from the best and get access to proven playbooks, skip the trial-and-error phase with strategies from the world's best traders, and become one of them.</p>
+					<div class="ecosystem__grid" data-reveal>
+						<article class="eco-card eco-card--green" data-tilt>
+							<img class="eco-card__img" data-tilt-img src="img/wtc.webp" alt="World Trading Championship" loading="lazy">
+							<div class="eco-card__scrim" aria-hidden="true"></div>
+							<div class="eco-card__body">
+								<span class="eco-card__tag">World Trading Championship</span>
+								<h3 class="eco-card__title">From Trader<br>to Champion</h3>
+								<p class="eco-card__text">To be the best, you must beat the best. Prove you have what it takes to survive among the elite.</p>
+								<a class="btn btn--outline btn--outline-green" href="#">Enter the WTC →</a>
+							</div>
+						</article>
+						<article class="eco-card eco-card--cyan" data-tilt>
+							<img class="eco-card__img" data-tilt-img src="img/learn.webp" alt="Learn from the best" loading="lazy">
+							<div class="eco-card__scrim" aria-hidden="true"></div>
+							<div class="eco-card__body">
+								<span class="eco-card__tag eco-card__tag--cyan">Learn From The Best</span>
+								<h3 class="eco-card__title">Master Winning<br>Strategies</h3>
+								<p class="eco-card__text">Watch the best of the best. Leverage their experience and gain the know-how to elevate you to the top.</p>
+								<a class="btn btn--outline btn--outline-cyan" href="#">Get the edge →</a>
+							</div>
+						</article>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== The ONE ===================== -->
+			<section class="the-one" id="the-one" data-screen-label="The ONE">
+				<div class="the-one__container">
+					<div class="the-one__status" data-reveal><span class="the-one__dot"></span>Status: Available</div>
+					<div class="the-one__waiting" data-reveal>We are waiting for you...</div>
+					<h2 class="the-one__title" data-reveal>The ONE</h2>
+					<p class="the-one__tagline" data-reveal>Be the Trader · Be the ONE</p>
+					<p class="the-one__lead lead" data-reveal>Master the markets to secure your future. Achieve long-term success and unlock an exclusive contract with a fixed salary. Only the top-tier traders — those who become <strong>The ONE</strong> — gain direct access to live account trading.</p>
+					<div class="the-one__perks" data-reveal>
+						<div class="the-one__perk"><span>Elite Contract</span></div>
+						<div class="the-one__perk"><span>Fixed Salary</span></div>
+						<div class="the-one__perk"><span>80% Profit Split</span></div>
+						<div class="the-one__perk"><span>Real Capital</span></div>
+						<div class="the-one__perk"><span>Live Account</span></div>
+						<div class="the-one__perk"><span>No Restrictions</span></div>
+					</div>
+					<a class="btn btn--primary btn--xl" href="#start" data-reveal>Become The One</a>
+				</div>
+			</section>
+
+			<!-- ===================== Community (pinned) ===================== -->
+			<section class="community" id="community" data-comm-pin data-screen-label="Community">
+				<div class="community__sticky">
+					<div class="community__head">
+						<div class="community__kicker kicker" data-comm-head>Community</div>
+						<h2 class="community__title" data-comm-head>Become part <span class="u-gradient">of our community</span></h2>
+					</div>
+
+					<div class="community__cards" data-comm-cards>
+						<div class="comm-card comm-card--discord" data-comm-card>
+							<img class="comm-card__img" src="img/community-discord.webp" alt="Join our Discord" loading="lazy">
+							<span class="comm-card__scrim" aria-hidden="true"></span>
+							<div class="comm-card__body">
+								<h3 class="comm-card__title">Join Our Discord</h3>
+								<a class="comm-card__cta comm-card__cta--discord" href="https://discord.gg/TgggpN2frU" target="_blank" rel="noopener">Join us →</a>
+							</div>
+						</div>
+						<div class="comm-card comm-card--instagram" data-comm-card>
+							<img class="comm-card__img" src="img/community-instagram.webp" alt="Follow Instagram" loading="lazy">
+							<span class="comm-card__scrim" aria-hidden="true"></span>
+							<div class="comm-card__body">
+								<h3 class="comm-card__title">Follow Instagram</h3>
+								<a class="comm-card__cta comm-card__cta--instagram" href="https://www.instagram.com/tronexocom/" target="_blank" rel="noopener">Follow us →</a>
+							</div>
+						</div>
+						<div class="comm-card comm-card--affiliate" data-comm-card>
+							<img class="comm-card__img" src="img/community-affiliate-1.webp" alt="Become Affiliate" loading="lazy">
+							<span class="comm-card__scrim" aria-hidden="true"></span>
+							<div class="comm-card__body">
+								<h3 class="comm-card__title">Become Affiliate</h3>
+								<a class="comm-card__cta comm-card__cta--affiliate" href="#">Partner with us →</a>
+							</div>
+						</div>
+					</div>
+
+					<div class="community__phone" data-comm-phone>
+						<span class="community__phone-notch" aria-hidden="true"></span>
+						<div class="community__phone-screen">
+							<video class="community__phone-video" autoplay muted loop playsinline data-src="img/wwweb.mp4"></video>
+							<div class="community__phone-card">
+								<span class="community__phone-badge">Stay tuned</span>
+								<h3 class="community__phone-title">Ecosystem updates</h3>
+								<p class="community__phone-text">Latest news, platform updates and insights.</p>
+							</div>
+						</div>
+					</div>
+
+					<div class="community__socials" data-comm-socials>
+						<p class="community__socials-lead lead" data-comm-soc data-i="0"><strong>TRONEXO</strong> isn't just a platform — it's a shared ecosystem. Follow us across every channel.</p>
+						<a class="soc-link soc-link--tiktok" data-comm-soc data-i="1" href="https://www.tiktok.com/@tronexocom">
+							<span class="soc-link__icon"><img src="img/tiktok.svg" alt="" aria-hidden="true"></span><span class="soc-link__text"><span class="soc-link__name">TikTok</span><span class="soc-link__meta">Watch →</span></span>
+						</a>
+						<a class="soc-link soc-link--x" data-comm-soc data-i="2" href="https://x.com/tronexocom">
+							<span class="soc-link__icon"><img src="img/twitter-x.svg" alt="" aria-hidden="true"></span><span class="soc-link__text"><span class="soc-link__name">X.com</span><span class="soc-link__meta">News →</span></span>
+						</a>
+						<a class="soc-link soc-link--youtube" data-comm-soc data-i="3" href="https://www.youtube.com/@tronexocom">
+							<span class="soc-link__icon"><img src="img/youtube.svg" alt="" aria-hidden="true"></span><span class="soc-link__text"><span class="soc-link__name">YouTube</span><span class="soc-link__meta">Subscribe →</span></span>
+						</a>
+						<a class="soc-link soc-link--facebook" data-comm-soc data-i="4" href="https://www.facebook.com/profile.php?id=61581649937358">
+							<span class="soc-link__icon"><img src="img/facebook.svg" alt="" aria-hidden="true"></span><span class="soc-link__text"><span class="soc-link__name">Facebook</span><span class="soc-link__meta">Join →</span></span>
+						</a>
+						<a class="soc-link soc-link--linkedin" data-comm-soc data-i="5" href="https://www.linkedin.com/company/tronexo-a-s/">
+							<span class="soc-link__icon"><img src="img/linkedin.svg" alt="" aria-hidden="true"></span><span class="soc-link__text"><span class="soc-link__name">LinkedIn</span><span class="soc-link__meta">Connect →</span></span>
+						</a>
+						<a class="soc-link soc-link--telegram" data-comm-soc data-i="6" href="https://t.me/+Po71rwOcJJM2ZDI0">
+							<span class="soc-link__icon"><img src="img/telegram.svg" alt="" aria-hidden="true"></span><span class="soc-link__text"><span class="soc-link__name">Telegram</span><span class="soc-link__meta">Join →</span></span>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Support & team (pinned, horizontal) ===================== -->
+			<section class="support" id="support" data-hpin data-screen-label="Support & Team">
+				<div class="support__sticky" data-fade-when-climbed>
+					<div class="support__bar">
+						<div class="support__kicker kicker">Real team · Real solutions</div>
+					</div>
+					<div class="support__track" data-htrack>
+
+						<div class="support__slide support__slide--intro">
+							<div class="support__photo">
+								<img src="img/support-team.webp" alt="TRONEXO team" loading="lazy">
+								<div class="support__photo-scrim" aria-hidden="true"></div>
+								<div class="support__photo-tags">
+									<span>Nonstop</span><span>Human</span><span>Multilingual</span>
+								</div>
+							</div>
+							<div class="support__copy">
+								<h2 class="support__title">Driven by a real team, <span class="u-gradient">that delivers real solutions</span></h2>
+								<p class="support__text"><strong>TRONEXO</strong> was built from the ground up on our own foundations and proprietary technical solutions. Behind every line of code, every support communication, and every daily operation is a real team that stands behind it.</p>
+								<div class="support__reach"><img src="img/Logo-White.svg" alt=""><span>Reach support</span></div>
+								<div class="support__channels">
+									<a class="channel" href="mailto:info@tronexo.com"><span class="channel__icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+												<path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
+											</svg></span>Email</a>
+									<a class="channel" href="https://wa.me/"><span class="channel__icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+												<path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
+											</svg></span>WhatsApp</a>
+									<a class="channel" href="#"><span class="channel__icon"><svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+												<path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2.5a2 2 0 0 0-1.6.8L8 14.333 6.1 11.8a2 2 0 0 0-1.6-.8H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5a1 1 0 0 1 .8.4l1.9 2.533a1 1 0 0 0 1.6 0l1.9-2.533a1 1 0 0 1 .8-.4H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+												<path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6m0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5" />
+											</svg></span>Live Chat</a>
+								</div>
+							</div>
+						</div>
+
+						<div class="support__slide support__slide--about">
+							<img class="support__about-img" src="img/team-group.webp" alt="TRONEXO team" loading="lazy">
+							<div class="support__about-scrim" aria-hidden="true"></div>
+							<div class="support__about-body">
+								<h3 class="support__about-title">Built by real people,<br>for real traders</h3>
+								<p class="support__about-text">People. Precision. Power. Every decision at <strong>TRONEXO</strong> starts here. Meet the powerhouse behind every decision — a team that never settles for average.</p>
+								<a class="btn btn--primary btn--about" href="#start">about us →</a>
+							</div>
+						</div>
+
+					</div>
+				</div>
+			</section>
+
+			<!-- ===================== Start (pinned) ===================== -->
+			<section class="start" id="start" data-start-pin data-screen-label="Start">
+				<div class="start__stage" data-start-stage>
+					<div class="start__bg" data-start-bg>
+						<img src="img/start.webp" alt="Start trading">
+						<div class="start__bg-scrim" aria-hidden="true"></div>
+					</div>
+					<div class="start__container">
+						<div class="start__kicker kicker" data-start-head>Start your challenge</div>
+						<h2 class="start__title title" data-start-head>Secure your <span class="u-gradient">spot today</span></h2>
+
+						<div class="start__items">
+							<div class="start__item" data-start-item><span class="start__check">✓</span><span class="start__item-text"><b>Virtual capital</b> <span class="start__item-dim">— gain significant simulated capital.</span></span></div>
+							<div class="start__item" data-start-item><span class="start__check">✓</span><span class="start__item-text"><b>3 funding models</b> <span class="start__item-dim">— choose what fits your style.</span></span></div>
+							<div class="start__item" data-start-item><span class="start__check">✓</span><span class="start__item-text"><b>No time limits</b> <span class="start__item-dim">— trade at your own pace.</span></span></div>
+							<div class="start__item" data-start-item><span class="start__check">✓</span><span class="start__item-text"><b>Less risk</b> <span class="start__item-dim">— trade in a simulated environment.</span></span></div>
+							<div class="start__item" data-start-item><span class="start__check">✓</span><span class="start__item-text"><b>Earn rewards</b> <span class="start__item-dim">— fast and secure rewards.</span></span></div>
+						</div>
+
+						<div class="start__cta" data-start-cta>
+							<a class="btn btn--primary btn--lg" href="#">Pre-register now <span class="btn__arrow">→</span></a>
+							<div class="start__note">Trader Zone is coming soon</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+		<footer class="footer">
+			<div class="footer__container">
+				<div class="footer__cta" data-cta-band>
+					<h3 class="footer__cta-title">
+						<span class="footer__cta-line"><span class="footer__cta-word" data-cta-word>Ready to</span></span>
+						<span class="footer__cta-line"><span class="footer__cta-word u-gradient" data-cta-word>trade?</span></span>
+					</h3>
+					<div class="footer__cta-action" data-cta-btn>
+						<a class="btn btn--primary" href="#start">Pre-register now →</a>
+					</div>
+				</div>
+
+				<div class="footer__grid">
+					<div class="footer__brand">
+						<img class="footer__logo" src="img/Logo-White.svg" alt="TRONEXO">
+						<div class="footer__slogan">Be the Trader. Be the ONE.</div>
+						<p class="footer__about">World’s most progressive prop trading ecosystem, with clear rules, fast support and three virtual funding models.</p>
+						<div class="footer__social" aria-label="Social links">
+							<a href="https://www.instagram.com/tronexocom/" target="_blank" rel="noopener" aria-label="Instagram" style="--soc:#E4405F">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334" />
+								</svg>
+							</a>
+							<a href="https://www.facebook.com/profile.php?id=61581649937358" target="_blank" rel="noopener" aria-label="Facebook" style="--soc:#1877F2">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951" />
+								</svg>
+							</a>
+							<a href="https://x.com/tronexocom" target="_blank" rel="noopener" aria-label="X" style="--soc:#ffffff">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z" />
+								</svg>
+							</a>
+							<a href="https://www.youtube.com/@tronexocom" target="_blank" rel="noopener" aria-label="YouTube" style="--soc:#FF0000">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.01 2.01 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.01 2.01 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31 31 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.01 2.01 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A100 100 0 0 1 7.858 2zM6.4 5.209v4.818l4.157-2.408z" />
+								</svg>
+							</a>
+							<a href="https://www.linkedin.com/company/tronexo-a-s/" target="_blank" rel="noopener" aria-label="LinkedIn" style="--soc:#0A66C2">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854zm4.943 12.248V6.169H2.542v7.225zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248S2.4 3.226 2.4 3.934c0 .694.521 1.248 1.327 1.248zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016l.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225z" />
+								</svg>
+							</a>
+							<a href="https://discord.gg/TgggpN2frU" target="_blank" rel="noopener" aria-label="Discord" style="--soc:#5865F2">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612" />
+								</svg>
+							</a>
+							<a href="https://www.tiktok.com/@tronexocom" target="_blank" rel="noopener" aria-label="TikTok" style="--soc:#25F4EE">
+								<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+									<path d="M9 0h1.98c.144.715.54 1.617 1.235 2.512C12.895 3.389 13.797 4 15 4v2c-1.753 0-3.07-.814-4-1.829V11a5 5 0 1 1-5-5v2a3 3 0 1 0 3 3z" />
+								</svg>
+							</a>
+						</div>
+						<div class="footer__hq">
+							<strong>Headquarters:</strong><br>Jana Palacha 2944, 530 02 Pardubice, Czech Republic
+						</div>
+					</div>
+
+					<nav class="footer__col" data-spollers="767.98,max">
+						<details class="footer__spoller" open>
+							<summary class="footer__col-title">TRONEXO<svg class="footer__col-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+								</svg></summary>
+							<div class="footer__col-body">
+								<a href="#">How It Works</a>
+								<a href="#funding">Funding Models</a>
+								<a href="#platforms">Supported Platforms</a>
+								<a href="#funding">Trading Rules</a>
+								<a href="#">Instruments & Symbols</a>
+							</div>
+						</details>
+					</nav>
+					<nav class="footer__col" data-spollers="767.98,max">
+						<details class="footer__spoller" open>
+							<summary class="footer__col-title footer__col-title--cyan">Ecosystem<svg class="footer__col-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+								</svg></summary>
+							<div class="footer__col-body">
+								<a href="#">World Trading Championship</a>
+								<a href="#">Learn From The Best</a>
+								<a href="#the-one">Status: The ONE</a>
+								<a href="#">Mobile App</a>
+								<a href="#">Trading Hub</a>
+								<a href="#">Affiliate Program</a>
+							</div>
+						</details>
+					</nav>
+					<nav class="footer__col" data-spollers="767.98,max">
+						<details class="footer__spoller" open>
+							<summary class="footer__col-title footer__col-title--violet">Support<svg class="footer__col-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+								</svg></summary>
+							<div class="footer__col-body">
+								<a href="#">Terms & Conditions</a>
+								<a href="#">Privacy Policy</a>
+								<a href="#">Security</a>
+								<a href="#">FAQ</a>
+								<a href="#support">Contacts</a>
+							</div>
+						</details>
+					</nav>
+				</div>
+
+				<div class="footer__bottom">
+					<span>© 2026 TRONEXO. All rights reserved.</span>
+					<span class="footer__legal">
+						<a href="#">Terms & Conditions</a>
+						<a href="#">Privacy Policy</a>
+						<a href="#">Cookies</a>
+						<a href="#">Media Kit</a>
+					</span>
+				</div>
+
+				<div class="footer__recaptcha">
+					This site is protected by reCAPTCHA and the Google <a href="https://policies.google.com/privacy">Privacy Policy</a> and <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+				</div>
+
+				<div class="footer__disclaimer" data-spollers="767.98,max">
+					<details class="footer__spoller" open>
+						<summary class="footer__disclaimer-title">Disclaimer<svg class="footer__col-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+								<path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+							</svg></summary>
+						<div class="footer__disclaimer-body">
+							<p>This platform does not constitute an investment service, nor is it a broker or intermediary providing access to real financial markets. It does not facilitate trading in financial instruments, accept deposits from the public, or manage user funds. Its sole purpose is to educate users and test skills in a simulated environment.</p>
+							<p>Users gain access exclusively to demo accounts operating in a virtual environment with fictitious balances. These accounts cannot be used to trade with real money and are not intended for investment purposes. They are not real accounts, but tools for training and testing trading strategies. Any potential rewards for users are not investment returns.</p>
+							<p>Trades on demo accounts are simulated, although real market data from external providers may be used. The results achieved in this environment may be distorted and cannot be considered a reflection of real trading performance.</p>
+							<p>All information published on the platform, including prices, analyses, comments, or data outputs, is purely informational and educational in nature. It does not constitute investment advice, an offer to enter into a transaction, or advice or analysis of specific investment opportunities.</p>
+							<p>In some cases, the platform may offer assistance through an AI assistant. This tool provides indicative responses only and does not replace legal, financial, or other professional advice. Users are responsible for verifying all essential information in the terms and conditions, official documents, FAQs, or with the responsible person.</p>
+							<p>The services of this platform are not provided to users located in, resident in, or otherwise accessing the platform from the following restricted countries: Algeria, Angola, Cameroon, Central African Republic, Democratic Republic of the Congo, Côte d’Ivoire, Kenya, Namibia, South Sudan, Sudan, Afghanistan, Iran, Iraq, Kazakhstan, North Korea, Laos, Lebanon, Myanmar, Nepal, Syria, Viet Nam, Yemen, Belarus, Monaco, Russian Federation, Cuba, Haiti, Panama, Saint Lucia, Trinidad and Tobago, Vanuatu, Bolivia, and Venezuela. For more information about countries where services are not provided or are provided only on a limited basis, please refer to our <a href="#">Restricted Countries Policy</a>.</p>
+							<p>By using the platform, the user acknowledges and expressly agrees that the operator bears no liability for any potential losses, damages, or consequences that may arise based on the information or outputs available through this service. This text serves as a brief informative summary and does not replace the full legal version of the Terms and Conditions.</p>
+						</div>
+					</details>
+				</div>
+			</div>
+		</footer>
+
+	</div>
+	<script src="js/app.min.js?_v=20260630165510"></script>
+</body>
+
+</html>
