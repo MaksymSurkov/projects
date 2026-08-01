@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>HomePage</title>
+	<meta charset="UTF-8">
+	<meta name="format-detection" content="telephone=no">
+	<style>
+		body {
+			opacity: 0;
+		}
+	</style>
+	<link rel="stylesheet" href="css/style.min.css?_v=20260801220017">
+	<link rel="shortcut icon" href="favicon.ico">
+	<!-- <meta name="robots" content="noindex, nofollow"> -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#fefefe">
+</head>
+
+<body>
+	<div class="wrapper">
+		<header class="header" data-scroll data-scroll-show>
+			<div class="header__container">
+				<a href="home.html" class="header__logo">
+					<img src="img/logo.webp" alt="Image">
+				</a>
+				<div class="header__menu menu">
+					<button type="button" class="menu__icon icon-menu"><span></span></button>
+					<nav class="menu__body">
+						<ul class="menu__list">
+							<li class="menu__item"><a href="industrial.html" class="menu__link menu__link--prom">Промсмазки</a></li>
+							<li class="menu__item"><a href="bio.html" class="menu__link menu__link--bio">BIO</a></li>
+							<li class="menu__item"><a href="flex.html" class="menu__link menu__link--flex">FLEX</a></li>
+							<li class="menu__item"><a href="auto.html" class="menu__link menu__link--auto">Автоприсадки</a></li>
+						</ul>
+						<select name="lang" data-class-modif="lang">
+							<option value="1" selected>ru</option>
+							<option value="2">en</option>
+							<option value="3">es</option>
+						</select>
+					</nav>
+				</div>
+				<div class="header__auth" data-da=".menu__body, 991.98, 2">
+					<a href="#" class="button button--auth-login">Вход</a>
+					<a href="#" class="button button--auth-signup">Регистрация</a>
+				</div>
+				<div class="header__cta" data-da=".header__container, 991.98, 1">
+					<button type="button" data-popup="#popup" class="button button--cta">Подобрать продукт</button>
+				</div>
+			</div>
+		</header>
+		<main class="page page-home">
+			<section class="section-hero">
+				<div class="section-hero__container">
+					<div class="section-hero__content content-hero">
+						<div class="content-hero__label">
+							<span>нанотехнологии uptfe</span>
+						</div>
+						<h1 class="content-hero__title">
+							Сверхскользкая защита <strong>любых механизмов.</strong>
+						</h1>
+						<h2 class="content-hero__subtitle">
+							<span>Производим смазочные материалы и добавки на основе UPTFE — уникального материала, разработанного Российской академией наук. Меньше трения, износа и коррозии — в пищевой, тяжёлой, авто и морской индустрии.</span>
+							<strong>Kremlin Technology.</strong>
+						</h2>
+						<div class="content-hero__cta">
+							<button type="button" data-popup="#popup" class="button button--cta">подобрать продукт</button>
+						</div>
+						<div class="content-hero__tracking tracking-hero">
+							<div class="tracking-hero__item">
+								<div class="tracking-hero__icon">
+									<img src="img/hero/nanostruktura_uptfe.webp" alt="Earth Icon">
+								</div>
+								<div class="tracking-hero__info">
+									<div class="tracking-hero__location">технология</div>
+									<div class="tracking-hero__delivery">UPTFE / РАН</div>
+								</div>
+							</div>
+							<div class="tracking-hero__item">
+								<div class="tracking-hero__icon">
+									<img src="img/hero/wordmark.webp" alt="Boat Icon">
+								</div>
+								<div class="tracking-hero__info">
+									<div class="tracking-hero__location">стандарт</div>
+									<div class="tracking-hero__delivery">NSF H1 · ASTM</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="section-hero__blockquote">
+					<blockquote>
+						<p>"Меньше трения. Больше жизни."</p>
+					</blockquote>
+					<p class="cite">—<cite>Kremlin Technology</cite></p>
+				</div>
+				<div class="section-hero__image">
+					<!-- <img src="img/hero/hero-image.webp" alt="Hero Image"> -->
+					<video class="section-hero__video" autoplay muted loop playsinline preload="auto" poster="img/poster.webp">
+						<source src="img/web_video.webm" type="video/webm">
+						<source src="img/web_video.mp4" type="video/mp4">
+					</video>
+				</div>
+			</section>
+			<section class="section-numbers">
+				<div class="section-numbers__container">
+					<div class="section-numbers__header">
+						<div class="section-numbers__label label">наш масштаб</div>
+						<h2 class="section-numbers__title title">Мировой охват — одна формула.</h2>
+					</div>
+					<div class="section-numbers__body" data-watch data-watch-once data-watch-threshold="0.2">
+						<div class="section-numbers__item">
+							<div class="section-numbers__content">
+								<div class="section-numbers__value"><span data-digits-counter data-digits-counter-speed="900">20</span>+</div>
+								<div class="section-numbers__description">лет производства</div>
+							</div>
+						</div>
+						<div class="section-numbers__item">
+							<div class="section-numbers__content">
+								<div class="section-numbers__value" data-digits-counter data-digits-counter-speed="900">4</div>
+								<div class="section-numbers__description">направления</div>
+							</div>
+						</div>
+						<div class="section-numbers__item">
+							<div class="section-numbers__content">
+								<div class="section-numbers__value" data-digits-counter data-digits-counter-speed="900">34</div>
+								<div class="section-numbers__description">научных статьи</div>
+							</div>
+						</div>
+						<div class="section-numbers__item">
+							<div class="section-numbers__content">
+								<div class="section-numbers__value">-<span data-digits-counter data-digits-counter-speed="1100">100</span>x</div>
+								<div class="section-numbers__description">коэффициент трения</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="section-services">
+				<div class="section-services__container">
+					<div class="section-services__header" data-watch data-watch-once data-watch-threshold="0.2">
+						<div class="section-services__label label">что мы производим</div>
+						<h2 class="section-services__title title">Четыре направления, одна технология.</h2>
+						<p class="section-services__description">Все продукты построены на платформе UPTFE. Каждое направление — со своей линейкой, фасовкой и сертификацией под конкретную индустрию.</p>
+					</div>
+					<div class="section-services__body">
+						<div class="item-services item-services--prom" data-watch data-watch-once data-watch-threshold="0.15" data-prlx-parent data-prlx-smooth="30">
+							<div class="item-services__wrapper">
+								<div class="item-services__body">
+									<div class="item-services__content">
+										<h3 class="item-services__title">Промышленные смазки</h3>
+										<h4 class="item-services__subtitle">
+											Там, где металл трётся о металл под нагрузкой.
+										</h4>
+										<p class="item-services__description">
+											Высоконагруженные узлы тяжёлого машиностроения: редукторы, подшипники, открытые передачи, цепи и направляющие. UPTFE держит плёнку там, где обычная смазка выгорает или выдавливается.
+										</p>
+										<ul class="item-services__list">
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Редукторы и шестерни</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Подшипники качения и скольжения</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Открытые зубчатые передачи</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Цепные передачи</li>
+										</ul>
+										<a href="industrial.html" class="button button--cta">Смотреть направление</a>
+									</div>
+								</div>
+								<div class="item-services__image">
+									<img src="img/services/prom-2.webp" alt="Podshipniki" data-prlx data-coefficient="20" data-direction="-">
+									<div class="item-services__icon">
+										<img class="item-icon" src="img/services/cog.webp" alt="Prom Icon">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="item-services item-services--bio" data-watch data-watch-once data-watch-threshold="0.15" data-prlx-parent data-prlx-smooth="30">
+							<div class="item-services__wrapper">
+								<div class="item-services__body">
+									<div class="item-services__content">
+										<h3 class="item-services__title">Пищевые смазки BIO</h3>
+										<h4 class="item-services__subtitle">
+											Смазка, которой можно доверять рядом с продуктом.
+										</h4>
+										<p class="item-services__description">
+											Серия BIO — многоцелевые смазки и очистители для оборудования пищевой промышленности с технологией UPTFE. Допуск NSF H1, пищевой допуск РФ и декларация ЕАЭС: безопасны при возможном контакте с пищей.
+										</p>
+										<ul class="item-services__list">
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Конвейерные линии</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Редукторы всех типов</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Подшипники качения и скольжения</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Цепные передачи</li>
+										</ul>
+										<a href="bio.html" class="button button--cta">Смотреть направление</a>
+									</div>
+								</div>
+								<div class="item-services__image">
+									<img src="img/services/bio.webp" alt="Bio" data-prlx data-coefficient="20" data-direction="-">
+									<div class="item-services__icon">
+										<img class="item-icon" src="img/services/leaf.webp" alt="Prom Icon">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="item-services item-services--flex" data-watch data-watch-once data-watch-threshold="0.15" data-prlx-parent data-prlx-smooth="30">
+							<div class="item-services__wrapper">
+								<div class="item-services__body">
+									<div class="item-services__content">
+										<h3 class="item-services__title">Добавки к краскам FLEX</h3>
+										<h4 class="item-services__subtitle">
+											Корпус корабля, который не обрастает и не ржавеет.
+										</h4>
+										<p class="item-services__description">
+											FLEX — добавка в лакокрасочные материалы на основе UPTFE. Придаёт покрытиям антиобледенительные, антикоррозионные, гидрофобные и противообрастающие свойства. Для предприятий, которые красят суда, металлоконструкции и промышленные объекты.
+										</p>
+										<ul class="item-services__list">
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Судостроение и судоремонт</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Защита металлоконструкций</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Нефтегазовые и нефтехимические комплексы</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Железнодорожный и автотранспорт</li>
+										</ul>
+										<a href="flex.html" class="button button--cta">Смотреть направление</a>
+									</div>
+								</div>
+								<div class="item-services__image">
+									<img src="img/services/flex.webp" alt="Flex" data-prlx data-coefficient="20" data-direction="-">
+									<div class="item-services__icon">
+										<img class="item-icon" src="img/services/droplets.webp" alt="Flex Icon">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="item-services item-services--auto" data-watch data-watch-once data-watch-threshold="0.15" data-prlx-parent data-prlx-smooth="30">
+							<div class="item-services__wrapper">
+								<div class="item-services__body">
+									<div class="item-services__content">
+										<h3 class="item-services__title">Автомобильные присадки</h3>
+										<h4 class="item-services__subtitle">
+											Для всего, что крутится под большими нагрузками.
+										</h4>
+										<p class="item-services__description">
+											Присадки с UPTFE в моторные, трансмиссионные и редукторные масла, топливо и смазки. Антифрикционное покрытие на парах трения снижает износ двигателей, коробок передач, редукторов и ГУР и продлевает их ресурс.
+										</p>
+										<ul class="item-services__list">
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Двигатели внутреннего сгорания</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Коробки передач (МКПП / АКПП)</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Редукторы и мосты</li>
+											<li class="list-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m9 18 6-6-6-6" />
+												</svg>Гидроусилители руля</li>
+										</ul>
+										<a href="auto.html" class="button button--cta">Смотреть направление</a>
+									</div>
+								</div>
+								<div class="item-services__image">
+									<img src="img/services/auto.webp" alt="Auto" data-prlx data-coefficient="20" data-direction="-">
+									<div class="item-services__icon">
+										<img class="item-icon" src="img/services/car.webp" alt="Auto Icon">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="section-group">
+				<div class="section-group__container">
+					<div class="section-group__header header-group">
+						<div class="header-group__body">
+							<div class="header-group__label label">группа компаний</div>
+							<h2 class="header-group__title title">Часть промышленного холдинга.</h2>
+						</div>
+						<div class="header-group__info">
+							<p>
+								Kremlin Technology — три направления, объединённые одной командой и единым стандартом сервиса.
+							</p>
+						</div>
+					</div>
+					<div class="section-group__body">
+						<div class="section-group__item item-cars" data-watch data-watch-once data-watch-threshold="0.35">
+							<div class="item-cars__header header-cars">
+								<div class="header-cars__row">
+									<div class="header-cars__name">kremlin auto</div>
+									<div class="header-cars__location location-cars">
+										<div class="location-cars__icon">
+											<img src="img/group/earth.webp" alt="Earth Icon">
+										</div>
+										<div class="location-cars__state">eu</div>
+										<div class="location-cars__state">usa</div>
+										<div class="location-cars__state">ca</div>
+									</div>
+								</div>
+								<div class="header-cars__image">
+									<img src="img/group/cars.webp" alt="Kremlin Cars">
+								</div>
+							</div>
+							<div class="item-cars__body body-cars">
+								<div class="body-cars__header">
+									<h3 class="body-cars__title">Заказ автомобилей из Европы и Северной Америки</h3>
+									<h4 class="body-cars__subtitle">Подбор, торги на аукционах, проверка истории и доставка автомобиля «подключ» — от площадки до Санкт-Петербурга.</h4>
+								</div>
+								<ul class="body-cars__list">
+									<li class="body-cars__item">
+										<span class="body-cars__label">Роттердам, NL</span>
+										<span class="body-cars__value">от 3 000 €</span>
+									</li>
+									<li class="body-cars__item">
+										<span class="body-cars__label">Антверпен, BE</span>
+										<span class="body-cars__value">от 3 200 €</span>
+									</li>
+									<li class="body-cars__item">
+										<span class="body-cars__label">США (Нью-Йорк, Балтимор)</span>
+										<span class="body-cars__value">от 4 500 €</span>
+									</li>
+									<li class="body-cars__item">
+										<span class="body-cars__label">Канада (Галифакс, Монреаль)</span>
+										<span class="body-cars__value">от 4 200 €</span>
+									</li>
+								</ul>
+								<div class="body-cars__description">
+									*Стоимость доставки одного легкового автомобиля до Санкт-Петербурга. Сроки и точная ставка — по запросу.
+								</div>
+								<a href="https://kremlin.club/" class="body-cars__link">перейти на kremlin-auto</a>
+							</div>
+						</div>
+						<div class="section-group__item item-group" data-watch data-watch-once data-watch-threshold="0.35">
+							<div class="item-group__header header-group-item">
+								<div class="header-group-item__row">
+									<div class="header-group-item__name">kremlin group</div>
+									<div class="header-group-item__location location-group">
+										<div class="location-group__icon">
+											<img src="img/group/earth.webp" alt="Oil Icon">
+										</div>
+										<div class="location-group__state">ocean</div>
+										<div class="location-group__state">avia</div>
+										<div class="location-group__state">tech</div>
+										<div class="location-group__state">auto</div>
+									</div>
+								</div>
+								<div class="header-group-item__image">
+									<img src="img/group/hero-image.webp" alt="Kremlim Technologies">
+								</div>
+							</div>
+							<div class="item-group__body body-group">
+								<div class="body-group__header">
+									<h3 class="body-group__title">Глобальные грузовые перевозки</h3>
+									<h4 class="body-group__subtitle">Прямые морские контейнерные перевозки из США, Канады и Европы в Санкт-Петербург.</h4>
+								</div>
+								<ul class="body-group__list">
+									<li class="body-group__item">
+										<span class="body-group__label">Северная Америка</span>
+										<span class="body-group__value">от 3 000 €</span>
+									</li>
+									<li class="body-group__item">
+										<span class="body-group__label">Европа</span>
+										<span class="body-group__value">от 3 200 €</span>
+									</li>
+									<li class="body-group__item">
+										<span class="body-group__label">Ближний Восток</span>
+										<span class="body-group__value">от 4 500 €</span>
+									</li>
+									<li class="body-group__item">
+										<span class="body-group__label">Азия</span>
+										<span class="body-group__value">от 4 200 €</span>
+									</li>
+									<li class="body-group__item">
+										<span class="body-group__label">Южная Америка</span>
+										<span class="body-group__value">от 3 800 €</span>
+									</li>
+								</ul>
+								<div class="body-group__description">
+									*Сроки и точная ставка — по запросу.
+								</div>
+								<a href="https://kremlin.group/" class="body-group__link">перейти на kremlin-group</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="section-ports">
+				<div class="section-ports__container">
+					<div class="section-ports__header">
+						<div class="section-ports__label label">география</div>
+						<h2 class="section-ports__title title">Выходим на международный рынок.</h2>
+						<h3 class="section-ports__subtitle">
+							Российское производство с поставками за рубеж. Карта рынков расширяется — отмечаем новые страны по мере выхода.
+						</h3>
+						<div class="section-ports__description">
+							<div class="section-ports__pin section-ports__pin--green">Действующий рынок</div>
+							<div class="section-ports__pin section-ports__pin--yellow">В развитии</div>
+						</div>
+					</div>
+					<div class="section-ports__body atlas" data-watch data-watch-once data-watch-threshold="0.35">
+						<div class="atlas__grid"></div>
+						<ul class="atlas__pins">
+							<li class="atlas__pin atlas__pin--target atlas__pin--moscow">
+								<span class="atlas__pin-name">Россия</span>
+							</li>
+							<li class="atlas__pin atlas__pin--green atlas__pin--caracas">
+								<span class="atlas__pin-name">Венесуэла</span>
+							</li>
+							<li class="atlas__pin atlas__pin--green atlas__pin--abuja">
+								<span class="atlas__pin-name">Нигерия</span>
+							</li>
+							<li class="atlas__pin atlas__pin--green atlas__pin--abudhabi">
+								<span class="atlas__pin-name">ОАЭ</span>
+							</li>
+							<li class="atlas__pin atlas__pin--green atlas__pin--delhi">
+								<span class="atlas__pin-name">Индия</span>
+							</li>
+							<li class="atlas__pin atlas__pin--green atlas__pin--astana">
+								<span class="atlas__pin-name">Казахстан</span>
+							</li>
+							<li class="atlas__pin atlas__pin--cairo">
+								<span class="atlas__pin-name">Египет</span>
+							</li>
+							<li class="atlas__pin atlas__pin--ankara">
+								<span class="atlas__pin-name">Турция</span>
+							</li>
+							<li class="atlas__pin atlas__pin--brasilia">
+								<span class="atlas__pin-name">Бразилия</span>
+							</li>
+							<li class="atlas__pin atlas__pin--beijing">
+								<span class="atlas__pin-name">Китай</span>
+							</li>
+							<li class="atlas__pin atlas__pin--hanoi">
+								<span class="atlas__pin-name">Вьетнам</span>
+							</li>
+							<li class="atlas__pin atlas__pin--pretoria">
+								<span class="atlas__pin-name">ЮАР</span>
+							</li>
+						</ul>
+					</div>
+					<div class="section-ports__list" data-watch data-watch-once data-watch-threshold="0.35">
+						<div class="section-ports__item item-ports">
+							<h4 class="item-ports__title">африка</h4>
+							<ul class="item-ports__list">
+								<li class="item-ports__city">Нигерия</li>
+								<li class="item-ports__city">ЮАР</li>
+							</ul>
+						</div>
+						<div class="section-ports__item item-ports">
+							<h4 class="item-ports__title">ближний восток</h4>
+							<ul class="item-ports__list">
+								<li class="item-ports__city">ОАЭ</li>
+								<li class="item-ports__city">Турция</li>
+								<li class="item-ports__city">Египет</li>
+							</ul>
+						</div>
+						<div class="section-ports__item item-ports">
+							<h4 class="item-ports__title">азия</h4>
+							<ul class="item-ports__list">
+								<li class="item-ports__city">Казахстан</li>
+								<li class="item-ports__city">Китай</li>
+								<li class="item-ports__city">Вьетнам</li>
+								<li class="item-ports__city">Индия</li>
+							</ul>
+						</div>
+						<div class="section-ports__item item-ports">
+							<h4 class="item-ports__title">южная америка</h4>
+							<ul class="item-ports__list">
+								<li class="item-ports__city">Венесуэла</li>
+								<li class="item-ports__city">Бразилия</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="section-features">
+				<div class="section-features__container">
+					<div class="section-features__content" data-prlx-parent>
+						<div class="section-features__label label">почему UPTFE</div>
+						<h2 class="section-features__title title">Свойства, которых нет у обычных смазок</h2>
+						<h3 class="section-features__subtitle">
+							В основе всех продуктов — UPTFE: наноразмерный политетрафторэтилен, разработанный РАН. Частицы менее 1 мкм образуют сверхскользкое самовосстанавливающееся покрытие и восстанавливают изношенные поверхности трения.
+						</h3>
+						<img src="img/splash_oil.webp" alt="Features Image" class="section-features__image" data-prlx data-properties="translateY(-50%)" data-coefficient="10">
+					</div>
+					<ul class="section-features__list">
+						<li class="section-features__item item-features" id="_01">
+							<span class="item-features__title">Резко снижает трение</span>
+							<span class="item-features__description">Наночастицы UPTFE образуют сверхскользкое покрытие и снижают трение в паре в десятки раз даже при масляном голодании.</span>
+						</li>
+						<li class="section-features__item item-features" id="_02">
+							<span class="item-features__title">Защита от коррозии и воды</span>
+							<span class="item-features__description">Гидрофобное покрытие защищает поверхности от воды, обледенения, ржавчины и агрессивных сред.</span>
+						</li>
+						<li class="section-features__item item-features" id="_03">
+							<span class="item-features__title">Не вымывается</span>
+							<span class="item-features__description">Покрытие не смывается водой и щелочными моющими средствами при замывке оборудования.</span>
+						</li>
+						<li class="section-features__item item-features" id="_04">
+							<span class="item-features__title">Ресурс x2–4</span>
+							<span class="item-features__description">Увеличивает межремонтный период в 2–4 раза и восстанавливает изношенные поверхности трения.</span>
+						</li>
+						<li class="section-features__item item-features" id="_05">
+							<span class="item-features__title">Экологичность</span>
+							<span class="item-features__description">Безопасна для окружающей среды и живых организмов. Пищевые линейки сертифицированы по NSF H1.</span>
+						</li>
+						<li class="section-features__item item-features" id="_06">
+							<span class="item-features__title">Признано в мире</span>
+							<span class="item-features__description">Материал UPTFE признан ASTM International. Разработка РАН, резидент «Сколково».</span>
+						</li>
+					</ul>
+				</div>
+			</section>
+			<section class="section-steps">
+				<div class="section-steps__container">
+					<div class="section-steps__header header-steps">
+						<div class="header-steps__body">
+							<div class="header-steps__label label">как мы работаем</div>
+							<h2 class="header-steps__title title">От подбора до поставки на склад.</h2>
+						</div>
+						<div class="header-steps__cta">
+							<button type="button" data-popup="#popup" class="button button--cta">получить консультацию</button>
+						</div>
+					</div>
+					<div class="section-steps__body body-steps" data-watch data-watch-once data-watch-threshold="0.35">
+						<div class="body-steps__item">
+							<div class="body-steps__value body-steps__value--active">1</div>
+							<h3 class="body-steps__title">Подбор</h3>
+							<p class="body-steps__description">
+								Инженер подбирает продукт под узел, нагрузку и температурный режим вашего оборудования.
+							</p>
+						</div>
+						<div class="body-steps__item">
+							<div class="body-steps__value">2</div>
+							<h3 class="body-steps__title">Испытание</h3>
+							<p class="body-steps__description">
+								Опытная партия и контрольные замеры трения, износа и ресурса на вашей линии.
+							</p>
+						</div>
+						<div class="body-steps__item">
+							<div class="body-steps__value">3</div>
+							<h3 class="body-steps__title">Поставка</h3>
+							<p class="body-steps__description">
+								Серийные отгрузки в нужной фасовке — от аэрозоля и картриджа до ведра и бочки — с сертификатами и допусками (в т.ч. пищевыми NSF H1).
+							</p>
+						</div>
+						<div class="body-steps__item">
+							<div class="body-steps__value">4</div>
+							<h3 class="body-steps__title">Сопровождение</h3>
+							<p class="body-steps__description">
+								Технологическая поддержка, регламенты смазки и контроль межремонтного интервала.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="section-cta" data-watch data-watch-once data-watch-threshold="0.5">
+				<div class="section-cta__container">
+					<div class="section-cta__body">
+						<div class="section-cta__info">
+							<h2 class="section-cta__title">Подобрать продукт под вашу задачу?</h2>
+							<h3 class="section-cta__subtitle">Опишите узел или производство — инженер подберёт UPTFE-продукт и пришлёт спецификацию.</h3>
+						</div>
+						<div class="section-cta__button">
+							<button type="button" data-popup="#popup" class="button button--cta">получить консультацию</button>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="section-contact">
+				<div class="section-contact__container">
+					<div class="section-contact__body">
+						<h2 class="section-contact__title title">Свяжитесь с нами</h2>
+						<h3 class="section-contact__subtitle">
+							Подберем продукт под вашу задачую.
+						</h3>
+						<div class="section-contact__info info-contact">
+							<div class="info-contact__row row-address">
+								<div class="row-address__icon">
+									<img src="img/location-ico.webp" alt="" aria-hidden="true">
+								</div>
+								<div class="row-address__content">
+									<h4 class="row-address__title">Производство</h4>
+									<div class="row-address__items">
+										<div class="row-address__item">
+											<h5>Россия</h5>
+											<span>резидент технопарка «Сколково»</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="info-contact__row row-address">
+								<div class="row-address__icon">
+									<img src="img/mail-ico.webp" alt="" aria-hidden="true">
+								</div>
+								<div class="row-address__content">
+									<h4 class="row-address__title">Прямой запрос</h4>
+									<div class="row-address__items">
+										<address class="row-address__item">
+											<a class="row-address__mail" href="mailto:info@kremlin.technology">info@kremlin.technology</a>
+										</address>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="section-contact__form">
+						<form data-endpoint="/wp-json/kremlin/v1/contact" method="POST" class="contact-form" aria-labelledby="contact-form-heading" novalidate>
+							<h2 id="contact-form-heading" class="visually-hidden">Форма обратной связи</h2>
+							<div class="contact-form__row">
+								<div class="contact-form__input">
+									<label for="contact-name">Имя<span class="contact-form__required" aria-hidden="true">*</span></label>
+									<input id="contact-name" type="text" name="name" data-error="Error" placeholder="Введите имя" class="input" autocomplete="name" autocapitalize="words" required aria-required="true" aria-describedby="contact-name-error" minlength="2" maxlength="80">
+									<span id="contact-name-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+								</div>
+								<div class="contact-form__input">
+									<label for="contact-email">Email<span class="contact-form__required" aria-hidden="true">*</span></label>
+									<input id="contact-email" type="email" name="email" data-error="Error" placeholder="example@mail.com" class="input" autocomplete="email" inputmode="email" required aria-required="true" aria-describedby="contact-email-error" maxlength="120">
+									<span id="contact-email-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+								</div>
+							</div>
+							<div class="contact-form__row">
+								<div class="contact-form__input contact-form__input--select">
+									<label for="contact-type">Направление</label>
+									<select id="contact-type" name="type" data-class-modif="form" autocomplete="off">
+										<option value="prom" selected>Промышленные смазки</option>
+										<option value="bio">BIO</option>
+										<option value="flex">FLEX</option>
+										<option value="auto">Автоприсадки</option>
+									</select>
+								</div>
+							</div>
+							<div class="contact-form__row">
+								<div class="contact-form__input contact-form__input--message">
+									<label for="contact-message">Сообщение</label>
+									<textarea name="message" class="input" id="contact-message" placeholder="Опишите Ваши требования..." rows="5" maxlength="2000" aria-describedby="contact-message-error"></textarea>
+									<span id="contact-message-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+								</div>
+							</div>
+							<div class="contact-form__honeypot" aria-hidden="true">
+								<label for="contact-website">Сайт (не заполнять)</label>
+								<input id="contact-website" type="text" name="website" tabindex="-1" autocomplete="off">
+							</div>
+
+							<div class="contact-form__row contact-form__row--consent">
+								<label class="contact-form__consent" for="contact-consent">
+									<input id="contact-consent" type="checkbox" name="consent" value="1" required aria-required="true" aria-describedby="contact-consent-error" class="contact-form__consent-input">
+									<span class="contact-form__consent-text">
+										Я согласен на обработку
+										<a href="/privacy" target="_blank" rel="noopener noreferrer">персональных данных</a>
+										в соответствии с Политикой конфиденциальности.
+									</span>
+								</label>
+								<span id="contact-consent-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+							</div>
+
+							<div class="contact-form__status" role="status" aria-live="polite"></div>
+
+							<button type="submit" class="button button--form">
+								<span>Отправить запрос</span>
+							</button>
+						</form>
+					</div>
+				</div>
+			</section>
+		</main>
+		<footer class="footer">
+			<div class="footer__container">
+				<div class="footer__body">
+					<div class="footer__info info-footer">
+						<a href="#" class="info-footer__logo">
+							<img src="img/logo.webp" alt="Image">
+						</a>
+						<div class="info-footer__groups">
+							<div class="info-footer__group">ocean</div>
+							<div class="info-footer__group">auto</div>
+							<div class="info-footer__group">tech</div>
+							<div class="info-footer__group">avia</div>
+						</div>
+						<p class="info-footer__text">
+							Океанские контейнерные перевозки. Авто из Европы и США. Технические присадки. Один холдинг — три направления.
+						</p>
+					</div>
+					<div data-spollers="767.98, max" class="spollers">
+						<details class="spollers__item">
+							<summary class="spollers__title">навигация</summary>
+							<div class="spollers__body">
+								<ul class="nav-footer">
+									<li class="nav-footer__item">
+										<a href="industrial.html" class="nav-footer__link nav-footer__link--prom">Промсмазки</a>
+									</li>
+									<li class="nav-footer__item">
+										<a href="bio.html" class="nav-footer__link nav-footer__link--bio">BIO</a>
+									</li>
+									<li class="nav-footer__item">
+										<a href="flex.html" class="nav-footer__link nav-footer__link--flex">FLEX</a>
+									</li>
+									<li class="nav-footer__item">
+										<a href="auto.html" class="nav-footer__link nav-footer__link--auto">Автоприсадки</a>
+									</li>
+								</ul>
+							</div>
+						</details>
+						<details class="spollers__item">
+							<summary class="spollers__title">правовая информация</summary>
+							<div class="spollers__body">
+								<ul class="policies-footer">
+									<li class="policies-footer__item">
+										<a href="#" class="policies-footer__link">Конфиденциальность</a>
+									</li>
+									<li class="policies-footer__item">
+										<a href="#" class="policies-footer__link">Пользовательское соглашение</a>
+									</li>
+								</ul>
+							</div>
+						</details>
+						<details class="spollers__item">
+							<summary class="spollers__title">контакты</summary>
+							<div class="spollers__body">
+								<address class="contacts-footer__address">
+									<a class="contacts-footer__mail" href="mailto:info@kremlin.group">info@kremlin.group</a>
+									<span class="contacts-footer__location">
+										Россия
+									</span>
+									<span class="contacts-footer__location">
+										резидент технопарка «Сколково»
+									</span>
+								</address>
+							</div>
+						</details>
+					</div>
+				</div>
+				<div class="footer__author">
+					<div class="footer__copy">© 2003–2026 Kremlin Technology. Все права защищены.</div>
+					<div class="footer__date"><span id="lang">RU</span><span id="year">2026</span></div>
+				</div>
+			</div>
+		</footer>
+	</div>
+	<div id="popup" aria-hidden="true" class="popup">
+		<div class="popup__wrapper">
+			<div class="popup__content">
+				<button data-close type="button" class="popup__close">
+					<svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path opacity="0.850056" d="M1.73333 1.48883L21.5469 21.0288" stroke="#979797" stroke-linecap="square" />
+						<path opacity="0.850056" d="M21.2667 1.48883L1.45309 21.0288" stroke="#979797" stroke-linecap="square" />
+					</svg>
+				</button>
+				<form data-endpoint="/wp-json/kremlin/v1/contact" method="POST" class="contact-form" aria-labelledby="contact-form-heading" novalidate>
+					<h2 id="contact-form-heading" class="visually-hidden">Форма обратной связи</h2>
+					<div class="contact-form__row">
+						<div class="contact-form__input">
+							<label for="contact-name">Имя<span class="contact-form__required" aria-hidden="true">*</span></label>
+							<input id="contact-name" type="text" name="name" data-error="Error" placeholder="Введите имя" class="input" autocomplete="name" autocapitalize="words" required aria-required="true" aria-describedby="contact-name-error" minlength="2" maxlength="80">
+							<span id="contact-name-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+						</div>
+						<div class="contact-form__input">
+							<label for="contact-email">Email<span class="contact-form__required" aria-hidden="true">*</span></label>
+							<input id="contact-email" type="email" name="email" data-error="Error" placeholder="example@mail.com" class="input" autocomplete="email" inputmode="email" required aria-required="true" aria-describedby="contact-email-error" maxlength="120">
+							<span id="contact-email-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+						</div>
+					</div>
+					<div class="contact-form__row">
+						<div class="contact-form__input contact-form__input--select">
+							<label for="contact-type">Направление</label>
+							<select id="contact-type" name="type" data-class-modif="form" autocomplete="off">
+								<option value="prom" selected>Промышленные смазки</option>
+								<option value="bio">BIO</option>
+								<option value="flex">FLEX</option>
+								<option value="auro">Автоприсадки</option>
+							</select>
+						</div>
+					</div>
+					<div class="contact-form__row">
+						<div class="contact-form__input contact-form__input--message">
+							<label for="contact-message">Сообщение</label>
+							<textarea name="message" class="input" id="contact-message" placeholder="Опишите Ваши требования..." rows="5" maxlength="2000" aria-describedby="contact-message-error"></textarea>
+							<span id="contact-message-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+						</div>
+					</div>
+					<div class="contact-form__honeypot" aria-hidden="true">
+						<label for="contact-website">Сайт (не заполнять)</label>
+						<input id="contact-website" type="text" name="website" tabindex="-1" autocomplete="off">
+					</div>
+
+					<div class="contact-form__row contact-form__row--consent">
+						<label class="contact-form__consent" for="contact-consent">
+							<input id="contact-consent" type="checkbox" name="consent" value="1" required aria-required="true" aria-describedby="contact-consent-error" class="contact-form__consent-input">
+							<span class="contact-form__consent-text">
+								Я согласен на обработку
+								<a href="/privacy" target="_blank" rel="noopener noreferrer">персональных данных</a>
+								в соответствии с Политикой конфиденциальности.
+							</span>
+						</label>
+						<span id="contact-consent-error" class="contact-form__error" role="alert" aria-live="polite"></span>
+					</div>
+
+					<div class="contact-form__status" role="status" aria-live="polite"></div>
+
+					<button type="submit" class="button button--form">
+						<span>Отправить запрос</span>
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
+	<script src="js/app.min.js?_v=20260801220017"></script>
+</body>
+
+</html>
